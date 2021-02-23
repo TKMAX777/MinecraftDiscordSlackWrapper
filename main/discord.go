@@ -53,6 +53,7 @@ func (say Say) Handler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	var text string
 	{
 		var msg = strings.Split(
 			strings.TrimSpace(m.Message.Content), "say ",
@@ -61,11 +62,12 @@ func (say Say) Handler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if len(msg) < 2 || msg[0] != "" {
 			return
 		}
+		text = msg[1]
 	}
 
 	var message Message
 
-	err := message.New(m.Message.Content, m.Author.ID)
+	err := message.New(text, m.Author.ID)
 	if err != nil {
 		return
 	}
