@@ -20,9 +20,6 @@ func (s StdoutReadCloser) Read(p []byte) (n int, err error) {
 	n, err = s.readCloser.Read(p)
 	fmt.Printf("%s", p[:n])
 
-	if err != nil {
-		return
-	}
 	return
 }
 
