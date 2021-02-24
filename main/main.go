@@ -75,13 +75,13 @@ func init() {
 func main() {
 	stdinWriter, stdoutReader, stderrReader, _ := Minecraft.Pipes()
 
-	var stdin = make(chan Message)
+	var stdin = make(chan CommandContent)
 
 	go messageGetter(stdoutReader)
 	go messageGetter(stderrReader)
 	go messageSender(stdinWriter, stdin)
 
-	var say Say = Say{stdin}
+	var say MinecraftCommand = MinecraftCommand{stdin}
 
 	Discord.AddHandler(say.Handler)
 

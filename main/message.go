@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"strings"
 )
 
 // messageGetter get string text from the input stream
@@ -28,10 +27,14 @@ func messageGetter(stream io.ReadCloser) {
 	}
 }
 
-func messageSender(stream io.WriteCloser, input chan Message) {
-	for message := range input {
-		for _, text := range strings.Split(message.Content, "\n") {
-			stream.Write([]byte(fmt.Sprintf("/say [%s]%s\n", message.Name, text)))
+func messageSender(stream io.WriteCloser, input chan CommandContent) {
+	for commands := range input {
+		var command string
+		if commands.Options == "" {
+			command = commands.Command + "\n"
+		} else {
+			command = fmt.Sprintf("%s %s\n", commands.Command, commands.Options)
 		}
+		stream.Write([]byte(command))
 	}
 }

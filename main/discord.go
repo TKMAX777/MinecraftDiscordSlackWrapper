@@ -7,39 +7,19 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// Message put message data
-type Message struct {
-	Content string
-	Name    string
+// CommandContent put minecraft command content
+type CommandContent struct {
+	Command string
+	Options string
 }
 
-// Say handles say function
-type Say struct {
-	sendChannel chan Message
-}
-
-// New make send message from text and discord ID
-func (m *Message) New(text, discordID string) error {
-	var err error
-
-	users, err := ReadNameDict()
-	if err != nil {
-		return err
-	}
-
-	user, ok := users.findNameFromDiscordID(discordID)
-	if !ok {
-		return fmt.Errorf("Undefined user")
-	}
-
-	m.Content = text
-	m.Name = user
-
-	return nil
+// MinecraftCommand handles minecraft function
+type MinecraftCommand struct {
+	sendChannel chan CommandContent
 }
 
 // Handler handle say commands sent to discord
-func (say Say) Handler(s *discordgo.Session, m *discordgo.MessageCreate) {
+func (c MinecraftCommand) Handler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	if m.GuildID != Settings.Discord.GuildID {
 		return
@@ -53,27 +33,48 @@ func (say Say) Handler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	var text string
-	{
-		var msg = strings.Split(
-			strings.TrimSpace(m.Message.Content), "say ",
-		)
-
-		if len(msg) < 2 || msg[0] != "" {
-			return
-		}
-		text = msg[1]
-	}
-
-	var message Message
-
-	err := message.New(text, m.Author.ID)
+	userDict, err := ReadNameDict()
 	if err != nil {
 		return
 	}
-	fmt.Printf("%#v\n", m.Message.Content)
 
-	say.sendChannel <- message
+	user, ok := userDict.findUserFromDiscordID(m.Author.ID)
+	if !ok {
+		user, ok = userDict.findUserFromDiscordID("Default")
+		if !ok {
+			return
+		}
+	}
+
+	for _, text := range strings.Split(m.Message.Content, "\n") {
+		var command CommandContent
+		var msg = strings.Split(text, " ")
+
+		if len(msg) < 2 {
+			return
+		}
+
+		var permissions = GetPermissions(user.PermissionCode)
+		command.Command, ok = permissions[msg[0]]
+		if !ok {
+			return
+		}
+
+		switch command.Command {
+		case "/msg", "/say":
+			msg[1] = fmt.Sprintf("[%s]%s", user.Name, msg[1])
+		}
+
+		if msg[1] == ";" {
+			msg = msg[:1]
+		}
+
+		command.Options = strings.Join(msg[1:], " ")
+
+		fmt.Printf("[Discord]%v\n", text)
+
+		c.sendChannel <- command
+	}
 
 	return
 }

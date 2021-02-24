@@ -6,9 +6,13 @@ import (
 )
 
 // Users is a format of a user list
-type Users []struct {
-	DiscordID string
-	Name      string
+type Users []User
+
+// User is a format of a user profile
+type User struct {
+	DiscordID      string
+	Name           string
+	PermissionCode uint64
 }
 
 // ReadNameDict read name list
@@ -27,11 +31,11 @@ func ReadNameDict() (Users, error) {
 	return userDict, nil
 }
 
-func (u Users) findNameFromDiscordID(id string) (string, bool) {
+func (u Users) findUserFromDiscordID(id string) (User, bool) {
 	for _, user := range u {
 		if user.DiscordID == id {
-			return user.Name, true
+			return user, true
 		}
 	}
-	return "", false
+	return User{}, false
 }

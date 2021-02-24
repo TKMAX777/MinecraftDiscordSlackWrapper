@@ -8,11 +8,21 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
 - [MinecraftDiscordWrapper](#minecraftdiscordwrapper)
     - [概要](#概要)
     - [目次](#目次)
-    - [設定](#設定)
+    - [基本設定](#基本設定)
+        - [DiscordAPI](#discordapi)
+        - [設定ファイル](#設定ファイル)
+    - [コマンド](#コマンド)
+        - [設定](#設定)
+        - [PermissionCode](#permissioncode)
 
 <!-- /TOC -->
 
-## 設定
+## 基本設定
+### DiscordAPI
+- `Manage Message` を持ったBotTokenが必要です。
+
+### 設定ファイル
+
 このプログラムをserver.jarと同階層に配置。settings.jsonも次のように記述したものを配置する。
 
 ```json
@@ -34,23 +44,92 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
 }
 ```
 
-お好みで次のように
-`name_dict.json`
-ファイルを同層に作成すると、Discordで
-```
-say Content
-```
-によってメッセージを飛ばすことが可能。
 
+## コマンド
+### 設定
+次のような
+`name_dict.json`
+ファイルを同層に作成すると、Discordで許可したコマンドを叩くことが可能
 
 ```json
 [
     {
 	"DiscordID":"DiscordUserID",
-	"Name": "USER_NAME"
+	"Name": "USER_NAME",
+    "PermissionCode": 00000,
     }
 ]
 ```
+### PermissionCode
+各々のPermissionCodeの和を入力。Adminは全ての権限を許可します。
+
+| Permission | Code |
+| --- | --- |
+| Admin | 1 |
+| Advancement | 2 |
+| Attribute | 4 |
+| Ban | 8 |
+| Bossbar | 16 |
+| Clear | 32 |
+| Clone | 64 |
+| Data | 128 |
+| DataPack | 256 |
+| Debug | 512 |
+| DefaultGamemode | 1024 |
+| Deop | 2048 |
+| Difficulty | 4096 |
+| Effect | 8192 |
+| Enchant | 16384 |
+| Execute | 32768 |
+| Experience | 65536 |
+| Fill | 131072 |
+| ForceLoad | 262144 |
+| Function | 524288 |
+| GameMode | 1048576 |
+| GameRule | 2097152 |
+| Give | 4194304 |
+| Help | 8388608 |
+| Kick | 16777216 |
+| Kill | 33554432 |
+| List | 67108864 |
+| Locate | 134217728 |
+| Loot | 268435456 |
+| Me | 536870912 |
+| Msg | 1073741824 |
+| OP | 2147483648 |
+| Pardon | 4294967296 |
+| PardonIP | 8589934592 |
+| Particle | 17179869184 |
+| PlaySound | 34359738368 |
+| Recipe | 68719476736 |
+| Reload | 137438953472 |
+| ReplaceItem | 274877906944 |
+| Save | 549755813888 |
+| Say | 1099511627776 |
+| Schedule | 2199023255552 |
+| Scoreboard | 4398046511104 |
+| Seed | 8796093022208 |
+| SetBlock | 17592186044416 |
+| SetIdleTimeOut | 35184372088832 |
+| SetWorldSpawn | 70368744177664 |
+| SpawnPoint | 140737488355328 |
+| Spectate | 281474976710656 |
+| SpreadPlayers | 562949953421312 |
+| Stop | 1125899906842620 |
+| StopSound | 2251799813685250 |
+| Summon | 4503599627370500 |
+| Tag | 9007199254740990 |
+| Team | 18014398509482000 |
+| Teammsg | 36028797018964000 |
+| Teleport | 72057594037927900 |
+| TellRow | 144115188075856000 |
+| Time | 288230376151712000 |
+| Title | 576460752303423000 |
+| Trigger | 1152921504606850000 |
+| Weather | 2305843009213690000 |
+| WhiteList | 4611686018427390000 |
+| WorldBorder | 9223372036854780000 |
+
 
 
 
