@@ -1,8 +1,8 @@
 package process
 
 import (
-	"fmt"
 	"io"
+	"os"
 )
 
 // StdoutReadCloser handles process's Stdout
@@ -18,7 +18,7 @@ func NewStdout(r io.ReadCloser) *StdoutReadCloser {
 
 func (s StdoutReadCloser) Read(p []byte) (n int, err error) {
 	n, err = s.readCloser.Read(p)
-	fmt.Printf("%s", p[:n])
+	os.Stderr.Write(p[:n])
 
 	return
 }
