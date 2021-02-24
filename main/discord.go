@@ -44,6 +44,7 @@ func (c MinecraftCommand) Handler(s *discordgo.Session, m *discordgo.MessageCrea
 		if !ok {
 			return
 		}
+		user.Name = "Unknown"
 	}
 
 	for _, text := range strings.Split(m.Message.Content, "\n") {
