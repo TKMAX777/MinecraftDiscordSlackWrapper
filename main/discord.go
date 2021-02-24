@@ -19,7 +19,7 @@ type MinecraftCommand struct {
 }
 
 // Handler handle say commands sent to discord
-func (c MinecraftCommand) Handler(s *discordgo.Session, m *discordgo.MessageCreate) {
+func (c *MinecraftCommand) Handler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.GuildID != Settings.Discord.GuildID || m.ChannelID != Settings.Discord.ChannelID {
 		return
 	}

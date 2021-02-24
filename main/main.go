@@ -81,9 +81,9 @@ func main() {
 	go messageGetter(stderrReader)
 	go messageSender(stdinWriter, stdin)
 
-	var say MinecraftCommand = MinecraftCommand{stdin}
+	var cmd MinecraftCommand = MinecraftCommand{stdin}
 
-	Discord.AddHandler(say.Handler)
+	Discord.AddHandler(cmd.Handler)
 
 	var err = Discord.Open()
 	if err != nil {
