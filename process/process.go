@@ -20,10 +20,9 @@ func (p *Process) Pipes() (io.WriteCloser, io.ReadCloser, io.ReadCloser, error) 
 
 // Interrupt sends keyboard interrupt to the process and wait until it stops
 func (p *Process) Interrupt() {
-	p.pipe.Close()
-
 	p.cmd.Process.Signal(os.Interrupt)
 	p.cmd.Wait()
+	p.pipe.Close()
 
 	return
 }

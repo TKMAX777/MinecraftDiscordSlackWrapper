@@ -14,7 +14,7 @@ func setupCloseHandler() {
 
 	<-c
 	errorHandle(fmt.Errorf("[Server] KeyboardInterrupt"))
-	errorHandle(fmt.Errorf("Now stopping minecraft server"))
+	errorHandle(fmt.Errorf("Now killing minecraft server"))
 	Minecraft.Interrupt()
 	errorHandle(fmt.Errorf("[Server] Finished! GoodBye"))
 	os.Exit(0)
