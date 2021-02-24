@@ -1,6 +1,6 @@
 # MinecraftDiscordWrapper
 ## 概要
-DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム。ついでに許可したユーザに関してはsayを用いることが可能。
+DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム。ついでに許可したユーザに関して、コマンドを用いることが可能。
 
 ## 目次
 <!-- TOC -->
