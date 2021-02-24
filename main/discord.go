@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -16,6 +17,7 @@ type CommandContent struct {
 // MinecraftCommand handles minecraft function
 type MinecraftCommand struct {
 	sendChannel chan CommandContent
+	idRegExp    *regexp.Regexp
 }
 
 // Handler handle say commands sent to discord
@@ -65,16 +67,27 @@ func (c *MinecraftCommand) Handler(s *discordgo.Session, m *discordgo.MessageCre
 			return
 		}
 
-		switch command.Command {
-		case "/msg", "/say":
-			msg[1] = fmt.Sprintf("[%s]%s", user.Name, msg[1])
-		}
-
 		if msg[1] == ";" {
 			msg = msg[:1]
 		}
 
-		command.Options = strings.Join(msg[1:], " ")
+		switch command.Command {
+		case "/msg", "/say":
+			msg[1] = fmt.Sprintf("[%s]%s", user.Name, msg[1])
+			command.Options = strings.Join(msg[1:], " ")
+
+			for _, match := range c.idRegExp.FindAllStringSubmatch(command.Options, -1) {
+				fmt.Println(match)
+				u, ok := userDict.findUserFromDiscordID(match[1])
+				if !ok {
+					continue
+				}
+				command.Options = strings.ReplaceAll(command.Options, "!"+u.DiscordID, u.Name)
+			}
+
+		default:
+			command.Options = strings.Join(msg[1:], " ")
+		}
 
 		fmt.Printf("[Discord]%v\n", text)
 

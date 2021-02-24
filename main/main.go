@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"regexp"
 
 	"../discord"
 	"../minecraft"
@@ -81,7 +82,10 @@ func main() {
 	go messageGetter(stderrReader)
 	go messageSender(stdinWriter, stdin)
 
-	var cmd MinecraftCommand = MinecraftCommand{stdin}
+	var cmd MinecraftCommand = MinecraftCommand{
+		stdin,
+		regexp.MustCompile(`<@!(\d+)>`),
+	}
 
 	Discord.AddHandler(cmd.Handler)
 
