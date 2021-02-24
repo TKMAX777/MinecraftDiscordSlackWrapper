@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"strings"
 )
 
 // messageGetter get string text from the input stream
 func messageGetter(stream io.ReadCloser) {
 	defer stream.Close()
 
-	var joinedOrLeftRegExp = regexp.MustCompile(`\]: (.+) (joined|left) the game`)
+	var joinedOrLeftRegExp = regexp.MustCompile(`\]: (\S+) (joined|left) (the game)$`)
 	var infoTextRegExp = regexp.MustCompile(`\[\d{2}:\d{2}:\d{2}\] \[Server thread/INFO\]: (.+)`)
 
 	var rdr = bufio.NewReaderSize(stream, bufio.MaxScanTokenSize)
@@ -27,8 +28,10 @@ func messageGetter(stream io.ReadCloser) {
 			errorHandle(err)
 		}
 
+		text = strings.TrimSpace(text)
+
 		if joinedOrLeftRegExp.Match([]byte(text)) {
-			text = joinedOrLeftRegExp.ReplaceAllString(text, "]: `$1 $2 the game`")
+			text = joinedOrLeftRegExp.ReplaceAllString(text, "]: `$1 $2 $3`")
 		}
 
 		if Settings.Discord.InfoOnly {
