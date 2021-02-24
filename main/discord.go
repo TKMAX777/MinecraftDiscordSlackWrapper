@@ -20,8 +20,7 @@ type MinecraftCommand struct {
 
 // Handler handle say commands sent to discord
 func (c MinecraftCommand) Handler(s *discordgo.Session, m *discordgo.MessageCreate) {
-
-	if m.GuildID != Settings.Discord.GuildID {
+	if m.GuildID != Settings.Discord.GuildID || m.ChannelID != Settings.Discord.ChannelID {
 		return
 	}
 
@@ -51,13 +50,18 @@ func (c MinecraftCommand) Handler(s *discordgo.Session, m *discordgo.MessageCrea
 		var command CommandContent
 		var msg = strings.Split(text, " ")
 
-		if len(msg) < 2 {
-			return
-		}
-
 		var permissions = GetPermissions(user.PermissionCode)
 		command.Command, ok = permissions[msg[0]]
 		if !ok {
+			_, ok = permissions["say"]
+			if !ok || !user.SendAllMessages {
+				return
+			}
+			msg = append([]string{"say"}, msg...)
+			command.Command = "/say"
+		}
+
+		if len(msg) < 2 {
 			return
 		}
 

@@ -3,9 +3,10 @@ package main
 // Setting put application settings
 type Setting struct {
 	Discord struct {
-		Token   string
-		GuildID string
-		Default struct {
+		Token     string
+		GuildID   string
+		ChannelID string
+		Default   struct {
 			HookURI   string
 			AvaterURI string
 			UserName  string

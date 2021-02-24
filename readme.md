@@ -15,6 +15,7 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
         - [利用例](#利用例)
         - [設定](#設定)
         - [PermissionCode](#permissioncode)
+        - [sayコマンドの自動付加](#sayコマンドの自動付加)
         - [標準設定](#標準設定)
     - [免責事項](#免責事項)
 
@@ -33,6 +34,7 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
     "Discord":{
         "GuildID": "用いるDiscordサーバのGuildID",
         "Token": "DiscordToken",
+        "ChannelID": "ChannelID",
         "Default":{
             "AvaterURI": "BotのアイコンのURI。お好みで。",
             "UserName":"MinecraftWrapper",
@@ -160,6 +162,24 @@ say Message
 | WhiteList | 4611686018427390000 |
 | WorldBorder | 9223372036854780000 |
 
+### sayコマンドの自動付加
+次のように設定に 
+`SendAllMessages`
+項目を増やすことで、全てのメッセージを転送することができます。
+
+```json
+[{
+    "DiscordID": "DiscordID",
+    "Name": "USER_NAME",
+    "PermissionCode": 0000,
+    "SendAllMessages": true
+}]
+```
+
+ただし、
+**PermissionCodeでSayが有効になっている必要があります**
+。
+
 ### 標準設定
 `name_dict.json` 
 に次オブジェクトを追加することで、全ユーザの設定を一括に行うこともできます。ただし、sayコマンドや、msgコマンドのユーザ名が `Unknown` として扱われるため、通常は以上の設定を記述することをおすすめします。
@@ -167,7 +187,7 @@ say Message
 ```
 {
 	"DiscordID":"Default",
-    "PermissionCode": 00000,
+    "PermissionCode": 00000
 }
 ```
 

@@ -10,9 +10,10 @@ type Users []User
 
 // User is a format of a user profile
 type User struct {
-	DiscordID      string
-	Name           string
-	PermissionCode uint64
+	DiscordID       string
+	Name            string
+	PermissionCode  uint64
+	SendAllMessages bool
 }
 
 // ReadNameDict read name list
