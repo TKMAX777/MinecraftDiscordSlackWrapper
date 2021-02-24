@@ -43,6 +43,14 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
             "UserName":"MinecraftWrapper - Error -",
             "HookURI": "https://discord.com/api/webhooks/***(省略可。その場合Defaultが適用される)"
         }        
+    },
+    "Minecraft": {
+        "Options": [
+            "実行時のオプション",
+            "例",
+            "-Xms1G",
+            "-Xmx4G"
+        ]
     }
 }
 ```

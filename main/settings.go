@@ -16,4 +16,7 @@ type Setting struct {
 			UserName  string
 		}
 	}
+	Minecraft struct {
+		Options []string
+	}
 }

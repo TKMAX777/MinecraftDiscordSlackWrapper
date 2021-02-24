@@ -17,8 +17,9 @@ func NewHandler() *Handler {
 }
 
 // Start starts minectaft server
-func (m *Handler) Start() error {
-	return m.process.Start("java", "-Xms1G", "-Xmx4G", "-jar", "server.jar", "nogui")
+func (m *Handler) Start(opt ...string) error {
+	opt = append(opt, "-jar", "server.jar", "nogui")
+	return m.process.Start("java", opt...)
 }
 
 // Interrupt send keyboard interrupt to the minecraft server
