@@ -4,12 +4,14 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"regexp"
 )
 
 // messageGetter get string text from the input stream
 func messageGetter(stream io.ReadCloser) {
 	defer stream.Close()
 
+	var infoTextRegExp = regexp.MustCompile(`\[\d{2}:\d{2}:\d{2}\] \[Server thread/INFO\]:(.+)`)
 	var rdr = bufio.NewReaderSize(stream, bufio.MaxScanTokenSize)
 
 	for {
@@ -21,6 +23,13 @@ func messageGetter(stream io.ReadCloser) {
 				return
 			}
 			errorHandle(err)
+		}
+
+		if Settings.Discord.InfoOnly {
+			if !infoTextRegExp.Match([]byte(text)) {
+				continue
+			}
+			text = infoTextRegExp.ReplaceAllString(text, `$1`)
 		}
 
 		DiscordWebhook.SendMessage(text)

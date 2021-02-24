@@ -35,6 +35,7 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
         "GuildID": "用いるDiscordサーバのGuildID",
         "Token": "DiscordToken",
         "ChannelID": "ChannelID",
+        "InfoOnly": true,(これによって、サーバ出力のthread/INFOのみ取り出される)
         "Default":{
             "AvaterURI": "BotのアイコンのURI。お好みで。",
             "UserName":"MinecraftWrapper",

@@ -6,6 +6,7 @@ type Setting struct {
 		Token     string
 		GuildID   string
 		ChannelID string
+		InfoOnly  bool
 		Default   struct {
 			HookURI   string
 			AvaterURI string
