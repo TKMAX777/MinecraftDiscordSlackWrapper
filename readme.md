@@ -48,6 +48,7 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
         }        
     },
     "Minecraft": {
+        "JAVA":"JAVA Path 省略可",
         "Options": [
             "実行時のオプション",
             "例",

@@ -67,7 +67,7 @@ func init() {
 
 	Minecraft = minecraft.NewHandler()
 
-	err = Minecraft.Start(Settings.Minecraft.Options...)
+	err = Minecraft.Start(Settings.Minecraft.JAVA, Settings.Minecraft.Options...)
 	if err != nil {
 		panic(err)
 	}

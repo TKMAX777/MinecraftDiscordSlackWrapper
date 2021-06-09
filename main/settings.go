@@ -19,6 +19,7 @@ type Setting struct {
 		}
 	}
 	Minecraft struct {
+		JAVA    string
 		Options []string
 	}
 }
