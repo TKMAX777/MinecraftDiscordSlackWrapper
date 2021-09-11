@@ -3,7 +3,7 @@ package minecraft
 import (
 	"io"
 
-	"../process"
+	"local.packages/process"
 )
 
 // Handler handles minecraft server process

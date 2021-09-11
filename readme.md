@@ -32,8 +32,9 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
 ```json
 {
     "Discord":{
+        "UseDiscord2Minecraft": true/false(DiscordからMinecraftのメッセージ送信を含む操作を行うか),
         "GuildID": "用いるDiscordサーバのGuildID",
-        "Token": "DiscordToken",
+        "Token": "DiscordToken(UseDiscord2Minecraftがfalseの場合不要)",
         "ChannelID": "ChannelID",
         "InfoOnly": true,(これによって、サーバ出力のthread/INFOのみ取り出される)
         "Default":{

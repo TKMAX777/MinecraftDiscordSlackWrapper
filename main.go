@@ -6,9 +6,9 @@ import (
 	"io/ioutil"
 	"regexp"
 
-	"../discord"
-	"../minecraft"
 	"github.com/bwmarrin/discordgo"
+	"local.packages/discord"
+	"local.packages/minecraft"
 )
 
 // SettingsFilePath put settings file name
@@ -42,15 +42,17 @@ func init() {
 		panic(err)
 	}
 
-	if Settings.Discord.Token == "" {
-		fmt.Println("No token provided. Please run: airhorn -t <bot token>")
-		return
-	}
+	if Settings.Discord.UseDiscord2Minecraft {
+		if Settings.Discord.Token == "" {
+			fmt.Println("No Discord Token provided")
+			return
+		}
 
-	Discord, err = discordgo.New(Settings.Discord.Token)
-	if err != nil {
-		fmt.Println("Error creating Discord session: ", err)
-		return
+		Discord, err = discordgo.New(Settings.Discord.Token)
+		if err != nil {
+			fmt.Println("Error creating Discord session: ", err)
+			return
+		}
 	}
 
 	DiscordWebhook = discord.NewHandler(Settings.Discord.Default.HookURI)
@@ -87,11 +89,13 @@ func main() {
 		regexp.MustCompile(`<@!(\d+)>`),
 	}
 
-	Discord.AddHandler(cmd.Handler)
+	if Settings.Discord.UseDiscord2Minecraft {
+		Discord.AddHandler(cmd.Handler)
 
-	var err = Discord.Open()
-	if err != nil {
-		fmt.Println("Error opening Discord session: ", err)
+		var err = Discord.Open()
+		if err != nil {
+			fmt.Println("Error opening Discord session: ", err)
+		}
 	}
 
 	fmt.Printf("Now started Minecraft Wrapper...\n")
