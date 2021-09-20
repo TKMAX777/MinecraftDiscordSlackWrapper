@@ -25,7 +25,8 @@ type Setting struct {
 		}
 	}
 	Minecraft struct {
-		JAVA    string
-		Options []string
+		ThreadInfoRegExp string
+		JAVA             string
+		Options          []string
 	}
 }

@@ -13,7 +13,13 @@ func messageGetter(stream io.ReadCloser) {
 	defer stream.Close()
 
 	var joinedOrLeftRegExp = regexp.MustCompile(`\]: (\S+) (joined|left) (the game)$`)
-	var infoTextRegExp = regexp.MustCompile(`\[\d{2}:\d{2}:\d{2}\] \[Server thread/INFO\]: (.+)`)
+
+	var infoTextRegExp *regexp.Regexp
+	if Settings.Minecraft.ThreadInfoRegExp == "" {
+		infoTextRegExp = regexp.MustCompile(`\[\d{2}:\d{2}:\d{2}\] \[Server thread/INFO\]: (.+)`)
+	} else {
+		infoTextRegExp = regexp.MustCompile(Settings.Minecraft.ThreadInfoRegExp)
+	}
 
 	var rdr = bufio.NewReaderSize(stream, bufio.MaxScanTokenSize)
 
