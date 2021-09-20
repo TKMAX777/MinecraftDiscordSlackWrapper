@@ -17,6 +17,8 @@ func messageGetter(stream io.ReadCloser) {
 
 	var rdr = bufio.NewReaderSize(stream, bufio.MaxScanTokenSize)
 
+	var onlineUserNum int
+
 	for {
 		text, err := rdr.ReadString('\n')
 		if err == io.EOF {
@@ -31,10 +33,36 @@ func messageGetter(stream io.ReadCloser) {
 		text = strings.TrimSpace(text)
 
 		if joinedOrLeftRegExp.Match([]byte(text)) {
-			text = joinedOrLeftRegExp.ReplaceAllString(text, "]: `$1 $2 $3`")
+			if Settings.Discord.AddOnlineNumber {
+				switch joinedOrLeftRegExp.FindStringSubmatch(text)[2] {
+				case "joined":
+					onlineUserNum++
+				case "left":
+					onlineUserNum--
+				}
+
+				switch onlineUserNum {
+				case 0, 1:
+					text = joinedOrLeftRegExp.ReplaceAllString(text,
+						fmt.Sprintf("]: `$1 $2 $3`\nActive: %d player", onlineUserNum),
+					)
+				default:
+					text = joinedOrLeftRegExp.ReplaceAllString(
+						text, fmt.Sprintf("]: `$1 $2 $3`\nActive: %d players", onlineUserNum),
+					)
+				}
+
+			} else {
+				text = joinedOrLeftRegExp.ReplaceAllString(text, "]: `$1 $2 $3`")
+			}
+
+		} else {
+			if Settings.Discord.JoinAndLeftOnly {
+				continue
+			}
 		}
 
-		if Settings.Discord.InfoOnly {
+		if Settings.Discord.InfoOnly || Settings.Discord.JoinAndLeftOnly {
 			if !infoTextRegExp.Match([]byte(text)) {
 				continue
 			}

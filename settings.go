@@ -7,12 +7,17 @@ type Setting struct {
 		Token                string
 		GuildID              string
 		ChannelID            string
-		InfoOnly             bool
-		Default              struct {
+
+		InfoOnly        bool
+		JoinAndLeftOnly bool
+		AddOnlineNumber bool
+
+		Default struct {
 			HookURI   string
 			AvaterURI string
 			UserName  string
 		}
+
 		Error struct {
 			HookURI   string
 			AvaterURI string

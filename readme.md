@@ -37,6 +37,8 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
         "Token": "DiscordToken(UseDiscord2Minecraftがfalseの場合不要)",
         "ChannelID": "ChannelID",
         "InfoOnly": true,(これによって、サーバ出力のthread/INFOのみ取り出される)
+        "JoinAndLeftOnly": true,(これによって、join/leftのみ取り出される)
+        "AddOnlineNumber": true,(これをすると、Join/Leftの後にオンライン人数が表示される)
         "Default":{
             "AvaterURI": "BotのアイコンのURI。お好みで。",
             "UserName":"MinecraftWrapper",

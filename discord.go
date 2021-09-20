@@ -39,13 +39,18 @@ func (c *MinecraftCommand) Handler(s *discordgo.Session, m *discordgo.MessageCre
 		return
 	}
 
+	var user User
 	user, ok := userDict.findUserFromDiscordID(m.Author.ID)
 	if !ok {
 		user, ok = userDict.findUserFromDiscordID("Default")
 		if !ok {
 			return
 		}
-		user.Name = "Unknown"
+
+		user.Name = m.Member.Nick
+		if user.Name == "" {
+			user.Name = m.Member.User.Username
+		}
 	}
 
 	for _, text := range strings.Split(m.Message.Content, "\n") {
