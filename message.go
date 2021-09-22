@@ -39,29 +39,52 @@ func messageGetter(stream io.ReadCloser) {
 		text = strings.TrimSpace(text)
 
 		if joinedOrLeftRegExp.Match([]byte(text)) {
-			if Settings.Discord.AddOnlineNumber {
-				switch joinedOrLeftRegExp.FindStringSubmatch(text)[2] {
-				case "joined":
-					onlineUserNum++
-				case "left":
-					onlineUserNum--
-				}
+			var reaction string
 
+			switch joinedOrLeftRegExp.FindStringSubmatch(text)[2] {
+			case "joined":
+				onlineUserNum++
+				reaction = Settings.Discord.Reaction.Join
+			case "left":
+				onlineUserNum--
+				reaction = Settings.Discord.Reaction.Left
+			}
+
+			if Settings.Discord.AddOnlineNumber {
 				switch onlineUserNum {
 				case 0, 1:
-					text = joinedOrLeftRegExp.ReplaceAllString(text,
-						fmt.Sprintf("]: `$1 $2 $3`\nActive: %d player", onlineUserNum),
-					)
+					if reaction == "" {
+						text = joinedOrLeftRegExp.ReplaceAllString(text,
+							fmt.Sprintf("]: `$1 $2 $3`\nActive: %d player", onlineUserNum),
+						)
+					} else {
+						text = joinedOrLeftRegExp.ReplaceAllString(text,
+							fmt.Sprintf("]: %s `$1 $2 $3`\nActive: %d player", reaction, onlineUserNum),
+						)
+					}
 				default:
-					text = joinedOrLeftRegExp.ReplaceAllString(
-						text, fmt.Sprintf("]: `$1 $2 $3`\nActive: %d players", onlineUserNum),
-					)
+					if reaction == "" {
+						text = joinedOrLeftRegExp.ReplaceAllString(text,
+							fmt.Sprintf("]: `$1 $2 $3`\nActive: %d players", onlineUserNum),
+						)
+					} else {
+						text = joinedOrLeftRegExp.ReplaceAllString(text,
+							fmt.Sprintf("]: %s `$1 $2 $3`\nActive: %d players", reaction, onlineUserNum),
+						)
+					}
 				}
 
 			} else {
-				text = joinedOrLeftRegExp.ReplaceAllString(text, "]: `$1 $2 $3`")
+				if reaction == "" {
+					text = joinedOrLeftRegExp.ReplaceAllString(text,
+						fmt.Sprintf("]: `$1 $2 $3"),
+					)
+				} else {
+					text = joinedOrLeftRegExp.ReplaceAllString(text,
+						fmt.Sprintf("]: %s `$1 $2 $3`", reaction),
+					)
+				}
 			}
-
 		} else {
 			if Settings.Discord.JoinAndLeftOnly {
 				continue

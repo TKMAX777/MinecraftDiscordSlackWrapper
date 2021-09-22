@@ -12,6 +12,11 @@ type Setting struct {
 		JoinAndLeftOnly bool
 		AddOnlineNumber bool
 
+		Reaction struct {
+			Join string
+			Left string
+		}
+
 		Default struct {
 			HookURI   string
 			AvaterURI string
