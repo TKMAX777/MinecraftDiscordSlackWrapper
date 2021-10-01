@@ -23,7 +23,8 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
 
 ## 基本設定
 ### DiscordAPI
-- `Manage Message` を持ったBotTokenが必要です。
+- Discord側からの操作を受け付ける場合は`Manage Message` を持ったBotTokenが必要です。
+  - メッセージ類をDiscordに流す目的など、サーバ→Discord方向の機能しか用いない場合、これは不要です。
 
 ### 設定ファイル
 
