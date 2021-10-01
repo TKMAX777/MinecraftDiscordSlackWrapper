@@ -33,17 +33,26 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
 {
     "Discord":{
         "UseDiscord2Minecraft": true/false(DiscordからMinecraftのメッセージ送信を含む操作を行うか),
-        "GuildID": "用いるDiscordサーバのGuildID",
-        "Token": "DiscordToken(UseDiscord2Minecraftがfalseの場合不要)",
+        
+	"GuildID": "用いるDiscordサーバのGuildID",
+	"Token": "DiscordToken(UseDiscord2Minecraftがfalseの場合不要)",
         "ChannelID": "ChannelID",
+	
         "InfoOnly": true,(これによって、サーバ出力のthread/INFOのみ取り出される)
         "JoinAndLeftOnly": true,(これによって、join/leftのみ取り出される)
         "AddOnlineNumber": true,(これをすると、Join/Leftの後にオンライン人数が表示される)
+	
+	"Reaction": {
+			"Join": "Joinメッセージの頭に付けるリアクション(省略可)",
+			"Left": "Leftメッセージの頭に付けるリアクション(省略可)"
+	},
+	
         "Default":{
             "AvaterURI": "BotのアイコンのURI。お好みで。",
             "UserName":"MinecraftWrapper",
             "HookURI": "https://discord.com/api/webhooks/***"
         },
+	
         "Error":{
             "AvaterURI": "Error時のBotのアイコンのURI。お好みで。",
             "UserName":"MinecraftWrapper - Error -",
