@@ -26,7 +26,11 @@ func (w StdinWriteCloser) start() {
 
 	for {
 		input, err = w.scan()
-		if err != nil {
+		switch err {
+		case nil:
+		case io.EOF:
+			return
+		default:
 			fmt.Printf("(Input)Error:%s\n", err.Error())
 			continue
 		}
