@@ -17,7 +17,6 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
         - [PermissionCode](#permissioncode)
         - [sayコマンドの自動付加](#sayコマンドの自動付加)
         - [標準設定](#標準設定)
-    - [免責事項](#免責事項)
 
 <!-- /TOC -->
 
