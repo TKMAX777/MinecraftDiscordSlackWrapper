@@ -2,27 +2,124 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 
+	"github.com/TKMAX777/MinecraftDiscordWrapper/discord_webhook"
+	"github.com/TKMAX777/MinecraftDiscordWrapper/minecraft"
 	"github.com/bwmarrin/discordgo"
+	"github.com/pkg/errors"
 )
 
-// CommandContent put minecraft command content
-type CommandContent struct {
-	Command string
-	Options string
-}
+// DiscordHandler handles Discord conversations
+type DiscordHandler struct {
+	session *discordgo.Session
 
-// MinecraftCommand handles minecraft function
-type MinecraftCommand struct {
 	sendChannel chan CommandContent
 	idRegExp    *regexp.Regexp
+
+	webhook *discord_webhook.Handler
+
+	settings DiscordSetting
+}
+
+func NewDiscordHandler(settings DiscordSetting) *DiscordHandler {
+	var handler = &DiscordHandler{
+		webhook:  discord_webhook.New(settings.Token),
+		settings: settings,
+		idRegExp: regexp.MustCompile(`<@!(\d+)>`),
+	}
+
+	var err = handler.webhook.SetHookURI(settings.HookURI)
+	if err != nil {
+		log.Println("Failed to set custom webhook uri", err.Error())
+	}
+
+	return handler
+}
+
+func (d *DiscordHandler) SetCommandInput(stdin chan CommandContent) *DiscordHandler {
+	d.sendChannel = stdin
+	return d
+}
+
+func (d *DiscordHandler) StartSession() error {
+	session, err := discordgo.New(d.settings.Token)
+	if err != nil {
+		return errors.Wrap(err, "StartSession")
+	}
+	d.session = session
+
+	d.session.AddHandler(d.getMessage)
+	return errors.Wrap(d.session.Open(), "OpeningDiscordSession")
+}
+
+func (d *DiscordHandler) SendMessageFunction() MessageSender {
+	var onlineUserNum int
+
+	return MessageSender(func(message minecraft.Message) error {
+		var content string
+		switch message.Type {
+		case minecraft.MessageTypeJoin:
+			if d.settings.SendOption&(SendSettingJoinLeft|SendSettingAll) == 0 {
+				return nil
+			}
+
+			onlineUserNum++
+			if d.settings.AddOnlineNumber {
+				switch onlineUserNum {
+				case 0, 1:
+					content = fmt.Sprintf("%s `%s joined the game`\nActive: %d player", d.settings.Reaction.Join, message.User, onlineUserNum)
+				default:
+					content = fmt.Sprintf("%s `%s joined the game`\nActive: %d players", d.settings.Reaction.Join, message.User, onlineUserNum)
+				}
+			} else {
+				content = fmt.Sprintf("%s `%s joined the game`", d.settings.Reaction.Join, message.User)
+			}
+		case minecraft.MessageTypeLeft:
+			if d.settings.SendOption&(SendSettingJoinLeft|SendSettingAll) == 0 {
+				return nil
+			}
+
+			onlineUserNum--
+			if d.settings.AddOnlineNumber {
+				switch onlineUserNum {
+				case 0, 1:
+					content = fmt.Sprintf("%s `%s left the game`\nActive: %d player", d.settings.Reaction.Left, message.User, onlineUserNum)
+				default:
+					content = fmt.Sprintf("%s `%s left the game`\nActive: %d players", d.settings.Reaction.Left, message.User, onlineUserNum)
+				}
+			} else {
+				content = fmt.Sprintf("%s `%s left the game`", d.settings.Reaction.Left, message.User)
+			}
+		case minecraft.MessageTypeThreadINFO:
+			if d.settings.SendOption&(SendSettingThreadINFO|SendSettingAll) == 0 {
+				return nil
+			}
+
+			content = message.Message
+		case minecraft.MessageTypeOther:
+			if d.settings.SendOption&SendSettingAll == 0 {
+				return nil
+			}
+
+			content = message.Message
+		}
+
+		_, err := d.webhook.Send(d.settings.ChannelID, discord_webhook.Message{
+			UserName:  d.settings.UserName,
+			AvaterURL: d.settings.AvaterURI,
+			Content:   content,
+		}, false, nil)
+
+		return err
+	})
 }
 
 // Handler handle say commands sent to discord
-func (c *MinecraftCommand) Handler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.GuildID != Settings.Discord.GuildID || m.ChannelID != Settings.Discord.ChannelID {
+func (d *DiscordHandler) getMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
+	if m.GuildID != d.settings.GuildID || m.ChannelID != d.settings.ChannelID {
 		return
 	}
 
@@ -81,8 +178,7 @@ func (c *MinecraftCommand) Handler(s *discordgo.Session, m *discordgo.MessageCre
 			msg[1] = fmt.Sprintf("[%s]%s", user.Name, msg[1])
 			command.Options = strings.Join(msg[1:], " ")
 
-			for _, match := range c.idRegExp.FindAllStringSubmatch(command.Options, -1) {
-				fmt.Println(match)
+			for _, match := range d.idRegExp.FindAllStringSubmatch(command.Options, -1) {
 				u, ok := userDict.findUserFromDiscordID(match[1])
 				if !ok {
 					continue
@@ -96,8 +192,6 @@ func (c *MinecraftCommand) Handler(s *discordgo.Session, m *discordgo.MessageCre
 
 		fmt.Printf("[Discord]%v\n", text)
 
-		c.sendChannel <- command
+		d.sendChannel <- command
 	}
-
-	return
 }

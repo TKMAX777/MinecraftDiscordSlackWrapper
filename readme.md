@@ -33,32 +33,53 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
 ```json
 {
     "Discord":{
+        "UseDiscord": true/false, (Discord機能を利用するか)
         "UseDiscord2Minecraft": true/false(DiscordからMinecraftのメッセージ送信を含む操作を行うか),
         
-	"GuildID": "用いるDiscordサーバのGuildID",
-	"Token": "DiscordToken(UseDiscord2Minecraftがfalseの場合不要)",
+        "UserName": "MinecraftWrapper",
+        "SendOption": 後述の数値,
+        "AddOnlineNumber": true,
+
+	    "GuildID": "用いるDiscordサーバのGuildID",
         "ChannelID": "ChannelID",
+
+	    "Token": "DiscordToken(UseDiscord2Minecraftがfalseの場合不要)",
 	
         "InfoOnly": true,(これによって、サーバ出力のthread/INFOのみ取り出される)
         "JoinAndLeftOnly": true,(これによって、join/leftのみ取り出される)
         "AddOnlineNumber": true,(これをすると、Join/Leftの後にオンライン人数が表示される)
 	
-	"Reaction": {
-			"Join": "Joinメッセージの頭に付けるリアクション(省略可)",
-			"Left": "Leftメッセージの頭に付けるリアクション(省略可)"
-	},
-	
-        "Default":{
-            "AvaterURI": "BotのアイコンのURI。お好みで。",
-            "UserName":"MinecraftWrapper",
-            "HookURI": "https://discord.com/api/webhooks/***"
+        "Reaction": {
+                "Join": "Joinメッセージの頭に付けるリアクション(省略可)",
+                "Left": "Leftメッセージの頭に付けるリアクション(省略可)"
         },
 	
-        "Error":{
-            "AvaterURI": "Error時のBotのアイコンのURI。お好みで。",
-            "UserName":"MinecraftWrapper - Error -",
-            "HookURI": "https://discord.com/api/webhooks/***(省略可。その場合Defaultが適用される)"
-        }        
+        "AvaterURI": "BotのアイコンのURI。お好みで。",
+        "UserName":"MinecraftWrapper",
+        "HookURI": "https://discord.com/api/webhooks/***",(DiscordTokenにManageWebhookが含まれる場合不要)
+    },
+    "Slack": {
+        "UseSlack": true/false, (Slack機能を利用するか)
+        "UseSlack2Minecraft": true/false(SlackからMinecraftのメッセージ送信を含む操作を行うか),
+
+        "AvaterURI": "BotのアイコンのURI。お好みで。", 
+
+        "UserName": "MinecraftWrapper",
+        "ChannelID": "ChannelID",
+
+        "SendOption": 後述の数値,
+
+        "SendAllMessages": true, (Slackに投稿されたメッセージをすべてMinecraftに転送する, Say権限が必要)
+        "Token": "xoxb-****",
+        "EventToken": "xapp-1-***", (UseDiscord2Minecraftがfalseの場合不要)
+
+        "Permissions": 後述のPermissionCode,
+        "AddOnlineNumber": true,(これをすると、Join/Leftの後にオンライン人数が表示される)
+        
+        "Reaction": {
+            "Join": ":revolving_hearts:",
+            "Left": ":wave:"
+        }
     },
     "Minecraft": {
         "JAVA":"JAVA Path 省略可",
@@ -77,7 +98,7 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
 ## コマンド
 ### 利用例
 
-Discordで
+Discord / Slackで
 
 ```
 say Message
@@ -93,7 +114,7 @@ say Message
 
 というコメントが流れる。
 
-### 設定
+### 設定 - Discordの場合 -
 次のような
 `name_dict.json`
 ファイルを同層に作成すると、Discordで許可したコマンドを叩くことが可能
@@ -107,6 +128,10 @@ say Message
     }
 ]
 ```
+
+### 設定 - Slackの場合 -
+
+`settings.json` に該当するPermissionCodeを入力
 
 ### PermissionCode
 各々のPermissionCodeの和を入力。Adminは全ての権限を許可します。
@@ -178,7 +203,8 @@ say Message
 | WhiteList | 4611686018427387904 |
 | WorldBorder | 9223372036854775808 |
 
-### sayコマンドの自動付加
+### sayコマンドの自動付加 - Discord -
+
 次のように設定に 
 `SendAllMessages`
 項目を増やすことで、全てのメッセージを転送することができます。
@@ -196,7 +222,11 @@ say Message
 **PermissionCodeでSayが有効になっている必要があります**
 。
 
-### 標準設定
+### sayコマンドの自動付加 - Slack -
+
+`settings.json` 内に `"SendAllMessages": true` を追加
+
+### 標準設定 - Discord -
 `name_dict.json` 
 に次オブジェクトを追加することで、全ユーザの設定を一括に行うこともできます。ただし、sayコマンドや、msgコマンドのユーザ名が `Unknown` として扱われるため、通常は以上の設定を記述することをおすすめします。
 
@@ -206,9 +236,3 @@ say Message
     "PermissionCode": 00000
 }
 ```
-
-## 免責事項
-このプログラムはMinecraftサーバプログラムの標準入出力を完全にラップしたものとなっております。
-
-悪意のある第三者や、その他このプログラムに存在する未知のバグなどにより、サーバ運営に於いて深刻なセキュリティリスクを負う可能性があります。それらにより生じた損害について、製作者は一切の責任は持ちません。あくまでご利用は自己責任でお願いします。
-

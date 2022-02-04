@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"regexp"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/bwmarrin/discordgo"
-	"local.packages/discord"
-	"local.packages/minecraft"
+	"github.com/TKMAX777/MinecraftDiscordWrapper/minecraft"
+	"github.com/pkg/errors"
 )
 
 // SettingsFilePath put settings file name
@@ -17,88 +19,112 @@ const SettingsFilePath = "settings.json"
 // NameDictPath put name dict file name
 const NameDictPath = "name_dict.json"
 
-// Settings put application settings
-var Settings Setting
+func main() {
+	var settings Setting
 
-// Minecraft put minecraft handler
-var Minecraft *minecraft.Handler
-
-// Discord put discord handler
-var Discord *discordgo.Session
-
-// DiscordWebhook put discord webhook handler
-var DiscordWebhook *discord.Handler
-
-func init() {
-	var err error
-
+	// read settings
 	b, err := ioutil.ReadFile(SettingsFilePath)
 	if err != nil {
-		panic(err)
+		log.Println(errors.Wrap(err, "ReadSettings"))
+		return
 	}
 
-	err = json.Unmarshal(b, &Settings)
+	err = json.Unmarshal(b, &settings)
 	if err != nil {
-		panic(err)
+		log.Println(errors.Wrap(err, "UnmarshalSettings"))
+		return
 	}
 
-	if Settings.Discord.UseDiscord2Minecraft {
-		if Settings.Discord.Token == "" {
-			fmt.Println("No Discord Token provided")
-			return
-		}
+	var minecraftHandler = minecraft.NewHandler(settings.Minecraft)
 
-		Discord, err = discordgo.New(Settings.Discord.Token)
-		if err != nil {
-			fmt.Println("Error creating Discord session: ", err)
-			return
-		}
-	}
-
-	DiscordWebhook = discord.NewHandler(Settings.Discord.Default.HookURI)
-	DiscordWebhook.SetProfile(
-		Settings.Discord.Default.AvaterURI,
-		Settings.Discord.Default.UserName,
-	)
-
-	DiscordWebhook.SetErrorHookURI(Settings.Discord.Error.HookURI)
-	DiscordWebhook.SetErrorProfile(
-		Settings.Discord.Error.AvaterURI,
-		Settings.Discord.Error.UserName,
-	)
-
-	Minecraft = minecraft.NewHandler()
-
-	err = Minecraft.Start(Settings.Minecraft.JAVA, Settings.Minecraft.Options...)
+	cMessage, err := minecraftHandler.Start()
 	if err != nil {
-		panic(err)
+		log.Println(errors.Wrap(err, "StartingMinecraftServer"))
+		return
 	}
-}
 
-func main() {
-	stdinWriter, stdoutReader, stderrReader, _ := Minecraft.Pipes()
+	stdinWriter, _ := minecraftHandler.Pipes()
 
 	var stdin = make(chan CommandContent)
 
-	go messageGetter(stdoutReader)
-	go messageGetter(stderrReader)
-	go messageSender(stdinWriter, stdin)
+	// Synchronize standard input
+	go func() {
+		defer stdinWriter.Close()
+		for commands := range stdin {
+			var command string
+			if commands.Options == "" {
+				command = commands.Command + "\n"
+			} else {
+				command = fmt.Sprintf("%s %s\n", commands.Command, commands.Options)
+			}
+			stdinWriter.Write([]byte(command))
+		}
+	}()
 
-	var cmd MinecraftCommand = MinecraftCommand{
-		stdin,
-		regexp.MustCompile(`<@!(\d+)>`),
-	}
+	var messageSenders = []MessageSender{}
 
-	if Settings.Discord.UseDiscord2Minecraft {
-		Discord.AddHandler(cmd.Handler)
+	// set up Discord bot
+	if settings.Discord.UseDiscord {
+		var discordHandler = NewDiscordHandler(settings.Discord)
 
-		var err = Discord.Open()
-		if err != nil {
-			fmt.Println("Error opening Discord session: ", err)
+		messageSenders = append(messageSenders, discordHandler.SendMessageFunction())
+
+		if settings.Discord.UseDiscord2Minecraft {
+			if settings.Discord.Token == "" {
+				log.Println("No Discord Token provided")
+				return
+			}
+
+			discordHandler.SetCommandInput(stdin)
+
+			err = discordHandler.StartSession()
+			if err != nil {
+				log.Println(errors.Wrap(err, "StartingDiscordSession"))
+				return
+			}
 		}
 	}
 
+	// set up Slack bot
+	if settings.Slack.UseSlack {
+		var slackHandler = NewSlackHandler(settings.Slack)
+
+		messageSenders = append(messageSenders, slackHandler.SendMessageFunction())
+
+		if settings.Slack.UseSlack2Minecraft {
+			if settings.Slack.Token == "" {
+				log.Println("No Slack Token provided")
+				return
+			}
+
+			slackHandler.SetCommandInput(stdin)
+
+			err = slackHandler.StartSession()
+			if err != nil {
+				log.Println(errors.Wrap(err, "StartingSlackSession"))
+				return
+			}
+		}
+	}
+
+	go func() {
+		// Wait for new messages from minecraft
+		for message := range cMessage {
+			for _, sender := range messageSenders {
+				var err = sender(message)
+				if err != nil {
+					log.Println(errors.Wrap(err, "Send"))
+				}
+			}
+		}
+	}()
+
 	fmt.Printf("Now started Minecraft Wrapper...\n")
 
-	setupCloseHandler()
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+
+	<-sc
+	minecraftHandler.Interrupt()
+	os.Exit(0)
 }

@@ -12,7 +12,7 @@ type Users []User
 type User struct {
 	DiscordID       string
 	Name            string
-	PermissionCode  uint64
+	PermissionCode  PermissionCode
 	SendAllMessages bool
 }
 

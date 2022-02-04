@@ -1,37 +1,68 @@
 package main
 
+import "github.com/TKMAX777/MinecraftDiscordWrapper/minecraft"
+
 // Setting put application settings
 type Setting struct {
-	Discord struct {
-		UseDiscord2Minecraft bool
-		Token                string
-		GuildID              string
-		ChannelID            string
+	Discord   DiscordSetting
+	Slack     SlackSetting
+	Minecraft minecraft.Setting
+}
 
-		InfoOnly        bool
-		JoinAndLeftOnly bool
-		AddOnlineNumber bool
+type SendSetting int
 
-		Reaction struct {
-			Join string
-			Left string
-		}
+const (
+	SendSettingAll SendSetting = 1 << iota
+	SendSettingThreadINFO
+	SendSettingJoinLeft
+)
 
-		Default struct {
-			HookURI   string
-			AvaterURI string
-			UserName  string
-		}
+type DiscordSetting struct {
+	UseDiscord bool
 
-		Error struct {
-			HookURI   string
-			AvaterURI string
-			UserName  string
-		}
+	UseDiscord2Minecraft bool
+
+	Token string
+
+	GuildID   string
+	ChannelID string
+
+	SendOption SendSetting
+
+	AddOnlineNumber bool
+
+	Reaction struct {
+		Join string
+		Left string
 	}
-	Minecraft struct {
-		ThreadInfoRegExp string
-		JAVA             string
-		Options          []string
+
+	HookURI   string
+	AvaterURI string
+	UserName  string
+}
+
+type SlackSetting struct {
+	UseSlack bool
+
+	UseSlack2Minecraft bool
+
+	Token      string
+	EventToken string
+
+	ChannelID string
+
+	SendOption      SendSetting
+	SendAllMessages bool
+
+	AddOnlineNumber bool
+
+	Reaction struct {
+		Join string
+		Left string
 	}
+
+	Permissions PermissionCode
+
+	AvaterURI string
+	UserName  string
 }
