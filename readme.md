@@ -83,8 +83,8 @@ DiscordやSlackにMinecraftの出力内容を垂れ流すプログラム。つ�
     "Minecraft": {
         "JAVA":"JAVA Path 省略可",
         "ServerType": "default / paper",
-        "ThreadInfoRegExp":"Thread/INFOの特定の為の正規表現",
-        "CustomBinaryPath":"このプログラムのように、jarをラップするようなものを更にかませる場合は、ここで指定することが可能",
+        "ThreadInfoRegExp":"Thread/INFOの特定の為の正規表現, 通常は不要",
+        "CustomBinaryPath":"このプログラムのように、jarをラップするようなものを更にかませる場合は、ここで指定することが可能, 通常は不要",
         "Options": [
             "実行時のオプション",
             "例",
