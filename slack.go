@@ -228,14 +228,13 @@ func (s *SlackHandler) getMessage(ev *slackevents.MessageEvent) {
 
 		switch command.Command {
 		case "/msg", "/say", "msg", "say":
-			msg[1] = fmt.Sprintf("[%s]%s", user.Name, msg[1])
 			command.Options = strings.Join(msg[1:], " ")
-
-			text, err = s.escapeMessage(text)
+			command.Options, err = s.escapeMessage(command.Options)
 			if err != nil {
 				continue
 			}
 
+			command.Options = fmt.Sprintf("[%s]%s", user.Name, command.Options)
 		default:
 			command.Options = strings.Join(msg[1:], " ")
 		}
