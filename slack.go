@@ -260,7 +260,7 @@ func (s *SlackHandler) escapeMessage(content string) (output string, err error) 
 		if repl == "" {
 			repl = u.RealName
 		}
-		content = strings.Join(strings.Split(content, id[0]), "`@"+repl+"`")
+		content = strings.Join(strings.Split(content, id[0]), "@"+repl+"")
 	}
 
 	for _, ch := range s.regExp.Channel.FindAllStringSubmatch(content, -1) {
@@ -270,7 +270,7 @@ func (s *SlackHandler) escapeMessage(content string) (output string, err error) 
 
 		content = strings.Join(strings.Split(content,
 			fmt.Sprintf("<#%s|%s>", ch[1], ch[2])),
-			fmt.Sprintf("`#%s`(URI: <%sarchives/%s>)", ch[2], s.webhook.Identity.WorkspaceURI, ch[1]),
+			fmt.Sprintf("#%s", ch[2]),
 		)
 	}
 
@@ -282,7 +282,7 @@ func (s *SlackHandler) escapeMessage(content string) (output string, err error) 
 		if uri[1] == uri[2] {
 			content = strings.Join(strings.Split(content,
 				fmt.Sprintf("<%s|%s>", uri[1], uri[2])),
-				fmt.Sprintf("<%s>)", uri[1]),
+				uri[1],
 			)
 		}
 		content = strings.Join(strings.Split(content,
