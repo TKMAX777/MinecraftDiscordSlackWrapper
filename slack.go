@@ -28,6 +28,8 @@ type SlackHandler struct {
 		URI     *regexp.Regexp
 	}
 
+	serverType string
+
 	webhook *slack_webhook.Handler
 
 	messageUnescaper *strings.Replacer
@@ -63,6 +65,11 @@ func NewSlackHandler(settings SlackSetting) *SlackHandler {
 
 func (s *SlackHandler) SetCommandInput(stdin chan CommandContent) *SlackHandler {
 	s.sendChannel = stdin
+	return s
+}
+
+func (s *SlackHandler) SetServerType(serverType string) *SlackHandler {
+	s.serverType = serverType
 	return s
 }
 
@@ -206,6 +213,11 @@ func (s *SlackHandler) getMessage(ev *slackevents.MessageEvent) {
 			command.Command = "/say"
 		}
 
+		// if server uses paperMC, commands do not contain "/""
+		if s.serverType == "paper" {
+			command.Command = strings.TrimPrefix(command.Command, "/")
+		}
+
 		if len(msg) < 2 {
 			return
 		}
@@ -215,7 +227,7 @@ func (s *SlackHandler) getMessage(ev *slackevents.MessageEvent) {
 		}
 
 		switch command.Command {
-		case "/msg", "/say":
+		case "/msg", "/say", "msg", "say":
 			msg[1] = fmt.Sprintf("[%s]%s", user.Name, msg[1])
 			command.Options = strings.Join(msg[1:], " ")
 

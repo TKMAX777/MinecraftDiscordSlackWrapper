@@ -21,6 +21,8 @@ type DiscordHandler struct {
 
 	webhook *discord_webhook.Handler
 
+	serverType string
+
 	settings DiscordSetting
 }
 
@@ -41,6 +43,11 @@ func NewDiscordHandler(settings DiscordSetting) *DiscordHandler {
 
 func (d *DiscordHandler) SetCommandInput(stdin chan CommandContent) *DiscordHandler {
 	d.sendChannel = stdin
+	return d
+}
+
+func (d *DiscordHandler) SetServerType(serverType string) *DiscordHandler {
+	d.serverType = serverType
 	return d
 }
 
@@ -172,6 +179,10 @@ func (d *DiscordHandler) getMessage(s *discordgo.Session, m *discordgo.MessageCr
 			command.Command = "/say"
 		}
 
+		if d.serverType == "paper" {
+			command.Command = strings.TrimPrefix(command.Command, "/")
+		}
+
 		if len(msg) < 2 {
 			return
 		}
@@ -181,7 +192,7 @@ func (d *DiscordHandler) getMessage(s *discordgo.Session, m *discordgo.MessageCr
 		}
 
 		switch command.Command {
-		case "/msg", "/say":
+		case "/msg", "/say", "msg", "say":
 			msg[1] = fmt.Sprintf("[%s]%s", user.Name, msg[1])
 			command.Options = strings.Join(msg[1:], " ")
 

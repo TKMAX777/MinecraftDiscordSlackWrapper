@@ -25,6 +25,7 @@ type Setting struct {
 	ThreadInfoRegExp string
 	JAVA             string
 	CustomBinaryPath string
+	ServerType       string
 	Options          []string
 }
 
@@ -82,9 +83,11 @@ func (m *Handler) sendMessages() chan Message {
 	var infoTextRegExp *regexp.Regexp
 	switch m.settings.ThreadInfoRegExp {
 	case "", "default":
-		infoTextRegExp = regexp.MustCompile(`\[\d{2}:\d{2}:\d{2}\] \[Server thread/INFO\]: (.+)`)
-	case "paper":
-		infoTextRegExp = regexp.MustCompile(`\[\d{2}:\d{2}:\d{2} INFO\]: (.+)`)
+		if m.settings.ServerType == "paper" {
+			infoTextRegExp = regexp.MustCompile(`\[\d{2}:\d{2}:\d{2} INFO\]: (.+)`)
+		} else {
+			infoTextRegExp = regexp.MustCompile(`\[\d{2}:\d{2}:\d{2}\] \[Server thread/INFO\]: (.+)`)
+		}
 	default:
 		infoTextRegExp = regexp.MustCompile(m.settings.ThreadInfoRegExp)
 	}

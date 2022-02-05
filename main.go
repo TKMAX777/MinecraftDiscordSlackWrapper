@@ -66,6 +66,7 @@ func main() {
 	// set up Discord bot
 	if settings.Discord.UseDiscord {
 		var discordHandler = NewDiscordHandler(settings.Discord)
+		discordHandler.SetServerType(settings.Minecraft.ServerType)
 
 		messageSenders = append(messageSenders, discordHandler.SendMessageFunction())
 
@@ -88,6 +89,7 @@ func main() {
 	// set up Slack bot
 	if settings.Slack.UseSlack {
 		var slackHandler = NewSlackHandler(settings.Slack)
+		slackHandler.SetServerType(settings.Minecraft.ServerType)
 
 		messageSenders = append(messageSenders, slackHandler.SendMessageFunction())
 
