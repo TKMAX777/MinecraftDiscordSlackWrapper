@@ -70,7 +70,7 @@ DiscordやSlackにMinecraftの出力内容を垂れ流すプログラム。つ�
         "ChannelID": "ChannelID",
 
         "Token": "xoxb-****",
-        "EventToken": "xapp-1-***", (UseDiscord2Minecraftがfalseの場合不要)
+        "EventToken": "xapp-1-***", (UseSlack2Minecraftがfalseの場合不要)
 
         "Permissions": 後述のPermissionCode,
         "SendAllMessages": true, (Slackに投稿されたメッセージをすべてMinecraftに転送する, Say権限が必要)
