@@ -11,12 +11,14 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
     - [基本設定](#基本設定)
         - [DiscordAPI](#discordapi)
         - [設定ファイル](#設定ファイル)
-    - [コマンド](#コマンド)
-        - [利用例](#利用例)
-        - [設定](#設定)
-        - [PermissionCode](#permissioncode)
-        - [sayコマンドの自動付加](#sayコマンドの自動付加)
-        - [標準設定](#標準設定)
+        - [SendOption](#sendoption)
+    - [設定](#設定)
+        - [Discordの場合](#discordの場合)
+        - [Slackの場合](#slackの場合)
+    - [PermissionCode](#permissioncode)
+    - [参考 - sayコマンドの自動付加 -](#参考---sayコマンドの自動付加--)
+        - [Discord](#discord)
+        - [Slack](#slack)
 
 <!-- /TOC -->
 
@@ -37,16 +39,14 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
         
         "UserName": "MinecraftWrapper",
         "SendOption": 後述の数値,
-        "AddOnlineNumber": true,
+        "AddOnlineNumber": true,(これをすると、Join/Leftの後にオンライン人数が表示される)
 
 	    "GuildID": "用いるDiscordサーバのGuildID",
         "ChannelID": "ChannelID",
 
 	    "Token": "DiscordToken(UseDiscord2Minecraftがfalseの場合不要)",
-	
-        "InfoOnly": true,(これによって、サーバ出力のthread/INFOのみ取り出される)
-        "JoinAndLeftOnly": true,(これによって、join/leftのみ取り出される)
-        "AddOnlineNumber": true,(これをすると、Join/Leftの後にオンライン人数が表示される)
+        "Permissions": 後述のPermissionCode,
+        "SendAllMessages": true, (Slackに投稿されたメッセージをすべてMinecraftに転送する, Say権限が必要)
 	
         "Reaction": {
                 "Join": "Joinメッセージの頭に付けるリアクション(省略可)",
@@ -64,16 +64,16 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
         "AvaterURI": "BotのアイコンのURI。お好みで。", 
 
         "UserName": "MinecraftWrapper",
+        "SendOption": 後述の数値,
+        "AddOnlineNumber": true,(これをすると、Join/Leftの後にオンライン人数が表示される)
+
         "ChannelID": "ChannelID",
 
-        "SendOption": 後述の数値,
-
-        "SendAllMessages": true, (Slackに投稿されたメッセージをすべてMinecraftに転送する, Say権限が必要)
         "Token": "xoxb-****",
         "EventToken": "xapp-1-***", (UseDiscord2Minecraftがfalseの場合不要)
 
         "Permissions": 後述のPermissionCode,
-        "AddOnlineNumber": true,(これをすると、Join/Leftの後にオンライン人数が表示される)
+        "SendAllMessages": true, (Slackに投稿されたメッセージをすべてMinecraftに転送する, Say権限が必要)
         
         "Reaction": {
             "Join": ":revolving_hearts:",
@@ -82,7 +82,8 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
     },
     "Minecraft": {
         "JAVA":"JAVA Path 省略可",
-        "ThreadInfoRegExp":"Thread/INFOの特定の為の正規表現(標準設定なら不要)",
+        "ThreadInfoRegExp":"Thread/INFOの特定の為の正規表現(バニラサーバなら不要。paperMCの場合、paperと入力することが可能)",
+        "CustomBinaryPath":"このプログラムのように、jarをラップするようなものを更にかませる場合は、ここで指定することが可能",
         "Options": [
             "実行時のオプション",
             "例",
@@ -104,30 +105,14 @@ DiscordにMinecraftの出力内容を垂れ流すのが目的なプログラム�
 |4|入退室|
 
 
+## 設定 
+### Discordの場合 
 
-## コマンド
-### 利用例
+`settings.json`でPermissionsに適当なPermissionCodeを入力することで、Discordで実行することを許可するコマンドを一括設定できます。
 
-Discord / Slackで
-
-```
-say Message
-```
-
-と入力。
-
-→ Minecraft内に
-
-```
-[Server] [USER_Name]Message
-```
-
-というコメントが流れる。
-
-### 設定 - Discordの場合 -
 次のような
 `name_dict.json`
-ファイルを同層に作成すると、Discordで許可したコマンドを叩くことが可能
+ファイルを同層に作成することで、ユーザ毎に個別に設定を行うことも可能です。
 
 ```json
 [
@@ -139,11 +124,13 @@ say Message
 ]
 ```
 
-### 設定 - Slackの場合 -
+### Slackの場合
 
-`settings.json` に該当するPermissionCodeを入力
+`settings.json` に該当するPermissionCodeを入力することで、一括設定ができます。
 
-### PermissionCode
+SlackではDiscordと異なり、ユーザごとの設定は採用していません。
+
+## PermissionCode
 各々のPermissionCodeの和を入力。Adminは全ての権限を許可します。
 
 | Permission | Code |
@@ -213,9 +200,13 @@ say Message
 | WhiteList | 4611686018427387904 |
 | WorldBorder | 9223372036854775808 |
 
-### sayコマンドの自動付加 - Discord -
+## 参考 - sayコマンドの自動付加 -
+### Discord
 
-次のように設定に 
+一括で設定する場合は、`settings.json` 内に `"SendAllMessages": true` を追加します。
+
+
+`name_dict.json` で個別設定をしている場合は、次のように設定に 
 `SendAllMessages`
 項目を増やすことで、全てのメッセージを転送することができます。
 
@@ -232,17 +223,6 @@ say Message
 **PermissionCodeでSayが有効になっている必要があります**
 。
 
-### sayコマンドの自動付加 - Slack -
+### Slack 
 
-`settings.json` 内に `"SendAllMessages": true` を追加
-
-### 標準設定 - Discord -
-`name_dict.json` 
-に次オブジェクトを追加することで、全ユーザの設定を一括に行うこともできます。ただし、sayコマンドや、msgコマンドのユーザ名が `Unknown` として扱われるため、通常は以上の設定を記述することをおすすめします。
-
-```
-{
-	"DiscordID":"Default",
-    "PermissionCode": 00000
-}
-```
+`settings.json` 内に `"SendAllMessages": true` を追加します。

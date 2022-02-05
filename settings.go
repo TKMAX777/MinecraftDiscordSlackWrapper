@@ -27,7 +27,8 @@ type DiscordSetting struct {
 	GuildID   string
 	ChannelID string
 
-	SendOption SendSetting
+	SendOption      SendSetting
+	SendAllMessages bool
 
 	AddOnlineNumber bool
 
@@ -35,6 +36,8 @@ type DiscordSetting struct {
 		Join string
 		Left string
 	}
+
+	Permissions PermissionCode
 
 	HookURI   string
 	AvaterURI string

@@ -139,9 +139,16 @@ func (d *DiscordHandler) getMessage(s *discordgo.Session, m *discordgo.MessageCr
 	var user User
 	user, ok := userDict.findUserFromDiscordID(m.Author.ID)
 	if !ok {
-		user, ok = userDict.findUserFromDiscordID("Default")
-		if !ok {
-			return
+		if d.settings.Permissions != 0 {
+			user = User{
+				PermissionCode:  d.settings.Permissions,
+				SendAllMessages: d.settings.SendAllMessages,
+			}
+		} else {
+			user, ok = userDict.findUserFromDiscordID("Default")
+			if !ok {
+				return
+			}
 		}
 
 		user.Name = m.Member.Nick
