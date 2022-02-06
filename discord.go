@@ -106,6 +106,24 @@ func (d *DiscordHandler) SendMessageFunction() MessageSender {
 			}
 
 			content = message.Message
+		case minecraft.MessageTypeDeath:
+			if d.settings.SendOption&(SendSettingDeath|SendSettingAll) == 0 {
+				return nil
+			}
+
+			content = message.Message
+		case minecraft.MessageTypeReachedTheAdvancement:
+			if d.settings.SendOption&(SendSettingReachedTheAdvancement|SendSettingAll) == 0 {
+				return nil
+			}
+
+			content = message.Message
+		case minecraft.MessageTypeMessage:
+			if d.settings.SendOption&(SendSettingMessage|SendSettingAll) == 0 {
+				return nil
+			}
+
+			content = message.Message
 		case minecraft.MessageTypeOther:
 			if d.settings.SendOption&SendSettingAll == 0 {
 				return nil

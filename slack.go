@@ -152,6 +152,24 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 			}
 
 			content = message.Message
+		case minecraft.MessageTypeDeath:
+			if s.settings.SendOption&(SendSettingDeath|SendSettingAll) == 0 {
+				return nil
+			}
+
+			content = message.Message
+		case minecraft.MessageTypeReachedTheAdvancement:
+			if s.settings.SendOption&(SendSettingReachedTheAdvancement|SendSettingAll) == 0 {
+				return nil
+			}
+
+			content = message.Message
+		case minecraft.MessageTypeMessage:
+			if s.settings.SendOption&(SendSettingMessage|SendSettingAll) == 0 {
+				return nil
+			}
+
+			content = message.Message
 		case minecraft.MessageTypeOther:
 			if s.settings.SendOption&SendSettingAll == 0 {
 				return nil

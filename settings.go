@@ -15,6 +15,9 @@ const (
 	SendSettingAll SendSetting = 1 << iota
 	SendSettingThreadINFO
 	SendSettingJoinLeft
+	SendSettingDeath
+	SendSettingMessage
+	SendSettingReachedTheAdvancement
 )
 
 type DiscordSetting struct {

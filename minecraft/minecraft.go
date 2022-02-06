@@ -2,6 +2,7 @@ package minecraft
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"regexp"
@@ -34,6 +35,9 @@ type MessageType int
 const (
 	MessageTypeJoin MessageType = iota
 	MessageTypeLeft
+	MessageTypeDeath
+	MessageTypeMessage
+	MessageTypeReachedTheAdvancement
 	MessageTypeThreadINFO
 	MessageTypeOther
 )
@@ -45,6 +49,8 @@ type Message struct {
 	// when Message type is Join / Left, User will have Join or Left user name
 	User string
 }
+
+const deathMessageTxt = "death.txt"
 
 // NewHandler makes new minecraft handler
 func NewHandler(settings Setting) *Handler {
@@ -78,7 +84,16 @@ func (m *Handler) Start() (chan Message, error) {
 }
 
 func (m *Handler) sendMessages() chan Message {
+	death, err := NewDeathMesasgeHandler()
+	if err != nil {
+		log.Printf("ParseDeathMessage: %s", err.Error())
+		return nil
+	}
+
+	var messageRegExp = regexp.MustCompile(`\]: <(\S+)> (.+)`)
 	var joinedOrLeftRegExp = regexp.MustCompile(`\]: (\S+) (joined|left) (the game)$`)
+	var reachedTheGoalRegExp = regexp.MustCompile(`\S+ has reached the goal`)
+	var madeTheAdvRegExp = regexp.MustCompile(`\S+ has made the advancement`)
 
 	var infoTextRegExp *regexp.Regexp
 	switch m.settings.ThreadInfoRegExp {
@@ -114,7 +129,7 @@ func (m *Handler) sendMessages() chan Message {
 			text = strings.TrimSpace(text)
 
 			switch {
-			case joinedOrLeftRegExp.Match([]byte(text)):
+			case joinedOrLeftRegExp.MatchString(text):
 				switch joinedOrLeftRegExp.FindStringSubmatch(text)[2] {
 				case "joined":
 					message.Type = MessageTypeJoin
@@ -125,8 +140,19 @@ func (m *Handler) sendMessages() chan Message {
 				message.User = joinedOrLeftRegExp.FindStringSubmatch(text)[1]
 
 				text = joinedOrLeftRegExp.ReplaceAllString(text, "$1 $2 $3")
-
-			case infoTextRegExp.Match([]byte(text)):
+			case reachedTheGoalRegExp.MatchString(text) || madeTheAdvRegExp.MatchString(text):
+				message.Type = MessageTypeReachedTheAdvancement
+				fmt.Printf("reachedTheAdvRegExp: %t\n", infoTextRegExp.MatchString(text))
+				text = infoTextRegExp.ReplaceAllString(text, `$1`)
+			case messageRegExp.MatchString(text):
+				message.Type = MessageTypeMessage
+				fmt.Printf("messageRegExp: %t\n", infoTextRegExp.MatchString(text))
+				text = infoTextRegExp.ReplaceAllString(text, `$1`)
+			case death.Match(text):
+				message.Type = MessageTypeDeath
+				fmt.Printf("death: %t\n", infoTextRegExp.MatchString(text))
+				text = infoTextRegExp.ReplaceAllString(text, `$1`)
+			case infoTextRegExp.MatchString(text):
 				message.Type = MessageTypeThreadINFO
 				text = infoTextRegExp.ReplaceAllString(text, `$1`)
 			default:
