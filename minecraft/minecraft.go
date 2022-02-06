@@ -2,7 +2,6 @@ package minecraft
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"log"
 	"regexp"
@@ -91,6 +90,8 @@ func (m *Handler) sendMessages() chan Message {
 	}
 
 	var messageRegExp = regexp.MustCompile(`\]: <(\S+)> (.+)`)
+	var serverMessageRegExp = regexp.MustCompile(`[Server] (.+)`)
+
 	var joinedOrLeftRegExp = regexp.MustCompile(`\]: (\S+) (joined|left) (the game)$`)
 	var reachedTheGoalRegExp = regexp.MustCompile(`\S+ has reached the goal`)
 	var madeTheAdvRegExp = regexp.MustCompile(`\S+ has made the advancement`)
@@ -142,15 +143,12 @@ func (m *Handler) sendMessages() chan Message {
 				text = joinedOrLeftRegExp.ReplaceAllString(text, "$1 $2 $3")
 			case reachedTheGoalRegExp.MatchString(text) || madeTheAdvRegExp.MatchString(text):
 				message.Type = MessageTypeReachedTheAdvancement
-				fmt.Printf("reachedTheAdvRegExp: %t\n", infoTextRegExp.MatchString(text))
 				text = infoTextRegExp.ReplaceAllString(text, `$1`)
-			case messageRegExp.MatchString(text):
+			case messageRegExp.MatchString(text) || serverMessageRegExp.MatchString(text):
 				message.Type = MessageTypeMessage
-				fmt.Printf("messageRegExp: %t\n", infoTextRegExp.MatchString(text))
 				text = infoTextRegExp.ReplaceAllString(text, `$1`)
 			case death.Match(text):
 				message.Type = MessageTypeDeath
-				fmt.Printf("death: %t\n", infoTextRegExp.MatchString(text))
 				text = infoTextRegExp.ReplaceAllString(text, `$1`)
 			case infoTextRegExp.MatchString(text):
 				message.Type = MessageTypeThreadINFO
