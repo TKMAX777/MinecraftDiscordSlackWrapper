@@ -90,7 +90,7 @@ func (m *Handler) sendMessages() chan Message {
 	}
 
 	var messageRegExp = regexp.MustCompile(`\]: <(\S+)> (.+)`)
-	var serverMessageRegExp = regexp.MustCompile(`[Server] (.+)`)
+	var serverMessageRegExp = regexp.MustCompile(`\[Server\] (.+)`)
 
 	var joinedOrLeftRegExp = regexp.MustCompile(`\]: (\S+) (joined|left) (the game)$`)
 	var reachedTheGoalRegExp = regexp.MustCompile(`\S+ has reached the goal`)
