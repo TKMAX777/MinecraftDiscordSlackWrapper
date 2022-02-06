@@ -1,26 +1,23 @@
 package minecraft
 
 import (
-	"io/ioutil"
 	"log"
 	"regexp"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 type DeathMesasgeHandler []*regexp.Regexp
 
 func NewDeathMesasgeHandler() (DeathMesasgeHandler, error) {
-	b, err := ioutil.ReadFile(deathMessageTxt)
-	if err != nil {
-		return nil, errors.Wrap(err, "ReadDeathMessageTxt")
-	}
-
 	var regexps = []*regexp.Regexp{}
 
-	var lines = strings.Split(string(b), "\n")
+	var lines = strings.Split(deathRegexps, "\n")
 	for _, l := range lines {
+		l = strings.TrimSpace(l)
+		if l == "" {
+			continue
+		}
+
 		reg, err := regexp.Compile(strings.TrimSpace(l))
 		if err != nil {
 			log.Printf("ParseDeathMessageErr: %s", err.Error())

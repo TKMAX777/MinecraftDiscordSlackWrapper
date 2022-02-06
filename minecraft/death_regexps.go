@@ -1,3 +1,6 @@
+package minecraft
+
+const deathRegexps = `
 \S+ was shot by \S+
 \S+ was shot by \S+ using \S+
 \S+ was pummeled by \S+
@@ -524,3 +527,4 @@
 \S+ drowned whilst trying to escape \S+
 \S+ walked into a cactus whilst trying to escape \S+
 \S+ was blown up by \S+
+`
