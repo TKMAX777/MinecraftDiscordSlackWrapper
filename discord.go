@@ -187,6 +187,11 @@ func (d *DiscordHandler) getMessage(s *discordgo.Session, m *discordgo.MessageCr
 		var msg = strings.Split(text, " ")
 
 		var permissions = GetPermissions(user.PermissionCode)
+
+		// check the message has prefix: "say"
+		// if there is the prefix, not escape "@" to "at_"
+		var hasPrefixSay = true
+
 		command.Command, ok = permissions[msg[0]]
 		if !ok {
 			_, ok = permissions["say"]
@@ -195,6 +200,7 @@ func (d *DiscordHandler) getMessage(s *discordgo.Session, m *discordgo.MessageCr
 			}
 			msg = append([]string{"say"}, msg...)
 			command.Command = "/say"
+			hasPrefixSay = false
 		}
 
 		if d.serverType == "paper" {
@@ -222,11 +228,14 @@ func (d *DiscordHandler) getMessage(s *discordgo.Session, m *discordgo.MessageCr
 				command.Options = strings.ReplaceAll(command.Options, "!"+u.DiscordID, u.Name)
 			}
 
+			if !hasPrefixSay {
+				// escape "@" (target selector)
+				command.Options = strings.ReplaceAll(command.Options, "@", "at_")
+			}
+
 		default:
 			command.Options = strings.Join(msg[1:], " ")
 		}
-
-		fmt.Printf("[Discord]%v\n", text)
 
 		d.sendChannel <- command
 	}

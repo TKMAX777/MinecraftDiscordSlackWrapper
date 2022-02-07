@@ -220,8 +220,12 @@ func (s *SlackHandler) getMessage(ev *slackevents.MessageEvent) {
 		var permissions = GetPermissions(s.settings.Permissions)
 
 		var ok bool
-		command.Command, ok = permissions[msg[0]]
 
+		// check the message has prefix: "say"
+		// if there is the prefix, not escape "@" to "at_"
+		var hasPrefixSay = true
+
+		command.Command, ok = permissions[msg[0]]
 		if !ok {
 			_, ok = permissions["say"]
 			if !ok || !s.settings.SendAllMessages {
@@ -229,6 +233,7 @@ func (s *SlackHandler) getMessage(ev *slackevents.MessageEvent) {
 			}
 			msg = append([]string{"say"}, msg...)
 			command.Command = "/say"
+			hasPrefixSay = false
 		}
 
 		// if server uses paperMC, commands do not contain "/""
@@ -252,12 +257,15 @@ func (s *SlackHandler) getMessage(ev *slackevents.MessageEvent) {
 				continue
 			}
 
+			if !hasPrefixSay {
+				// escape "@" (target selector)
+				command.Options = strings.ReplaceAll(command.Options, "@", "at_")
+			}
+
 			command.Options = fmt.Sprintf("[%s]%s", user.Name, command.Options)
 		default:
 			command.Options = strings.Join(msg[1:], " ")
 		}
-
-		fmt.Printf("[Slack]%v\n", text)
 
 		s.sendChannel <- command
 	}
