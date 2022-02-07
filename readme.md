@@ -1,11 +1,11 @@
-# MinecraftDiscordWrapper
+# MinecraftDiscordSlackWrapper
 ## 概要
 DiscordやSlackにMinecraftの出力内容を垂れ流すプログラム。ついでに許可したユーザに関して、コマンドを用いることが可能。
 
 ## 目次
 <!-- TOC -->
 
-- [MinecraftDiscordWrapper](#minecraftdiscordwrapper)
+- [MinecraftDiscordSlackWrapper](#minecraftdiscordslackwrapper)
     - [概要](#概要)
     - [目次](#目次)
     - [基本設定](#基本設定)
