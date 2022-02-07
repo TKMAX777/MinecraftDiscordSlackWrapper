@@ -18,7 +18,7 @@ func NewDeathMesasgeHandler() (DeathMesasgeHandler, error) {
 			continue
 		}
 
-		reg, err := regexp.Compile(strings.TrimSpace(l))
+		reg, err := regexp.Compile(l)
 		if err != nil {
 			log.Printf("ParseDeathMessageErr: %s", err.Error())
 			continue
