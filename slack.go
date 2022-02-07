@@ -157,13 +157,13 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 				return nil
 			}
 
-			content = message.Message
+			content = fmt.Sprintf("%s %s", s.settings.Reaction.Death, message.Message)
 		case minecraft.MessageTypeReachedTheAdvancement:
 			if s.settings.SendOption&(SendSettingReachedTheAdvancement|SendSettingAll) == 0 {
 				return nil
 			}
 
-			content = message.Message
+			content = fmt.Sprintf("%s %s", s.settings.Reaction.Advancement, message.Message)
 		case minecraft.MessageTypeMessage:
 			if s.settings.SendOption&(SendSettingMessage|SendSettingAll) == 0 {
 				return nil

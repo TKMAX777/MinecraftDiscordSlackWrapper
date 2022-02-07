@@ -111,13 +111,13 @@ func (d *DiscordHandler) SendMessageFunction() MessageSender {
 				return nil
 			}
 
-			content = message.Message
+			content = fmt.Sprintf("%s %s", d.settings.Reaction.Death, message.Message)
 		case minecraft.MessageTypeReachedTheAdvancement:
 			if d.settings.SendOption&(SendSettingReachedTheAdvancement|SendSettingAll) == 0 {
 				return nil
 			}
 
-			content = message.Message
+			content = fmt.Sprintf("%s %s", d.settings.Reaction.Advancement, message.Message)
 		case minecraft.MessageTypeMessage:
 			if d.settings.SendOption&(SendSettingMessage|SendSettingAll) == 0 {
 				return nil

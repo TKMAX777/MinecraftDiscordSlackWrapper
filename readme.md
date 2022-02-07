@@ -50,7 +50,9 @@ DiscordやSlackにMinecraftの出力内容を垂れ流すプログラム。つ�
 	
         "Reaction": {
                 "Join": "Joinメッセージの頭に付けるリアクション(省略可)",
-                "Left": "Leftメッセージの頭に付けるリアクション(省略可)"
+                "Left": "Leftメッセージの頭に付けるリアクション(省略可)",
+                "Death": "死亡メッセージ先頭に付けるリアクション(省略可)",
+                "Advancement": "進捗メッセージ先頭に付けるリアクション(省略可)"
         },
 	
         "AvaterURI": "BotのアイコンのURI。お好みで。",
@@ -77,7 +79,9 @@ DiscordやSlackにMinecraftの出力内容を垂れ流すプログラム。つ�
         
         "Reaction": {
             "Join": ":revolving_hearts:",
-            "Left": ":wave:"
+            "Left": ":wave:",
+            "Death": ":innocent:",
+            "Advancement": ":party_parrot:"
         }
     },
     "Minecraft": {

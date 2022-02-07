@@ -11,6 +11,13 @@ type Setting struct {
 
 type SendSetting int
 
+type ReactionSetting struct {
+	Join        string
+	Left        string
+	Death       string
+	Advancement string
+}
+
 const (
 	SendSettingAll SendSetting = 1 << iota
 	SendSettingThreadINFO
@@ -35,10 +42,7 @@ type DiscordSetting struct {
 
 	AddOnlineNumber bool
 
-	Reaction struct {
-		Join string
-		Left string
-	}
+	Reaction ReactionSetting
 
 	Permissions PermissionCode
 
@@ -62,10 +66,7 @@ type SlackSetting struct {
 
 	AddOnlineNumber bool
 
-	Reaction struct {
-		Join string
-		Left string
-	}
+	Reaction ReactionSetting
 
 	Permissions PermissionCode
 
