@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/TKMAX777/MinecraftDiscordWrapper/mcheads"
 	"github.com/TKMAX777/MinecraftDiscordWrapper/minecraft"
 	"github.com/TKMAX777/MinecraftDiscordWrapper/slack_webhook"
 	"github.com/pkg/errors"
@@ -20,7 +21,8 @@ type SlackHandler struct {
 	api *slack.Client
 	scm *scm.Client
 
-	sendChannel chan CommandContent
+	sendChannel   chan CommandContent
+	lastMessageTS string
 
 	regExp struct {
 		UserID  *regexp.Regexp
@@ -29,15 +31,15 @@ type SlackHandler struct {
 	}
 
 	serverType string
-
-	webhook *slack_webhook.Handler
+	joinState  *JoinState
+	webhook    *slack_webhook.Handler
 
 	messageUnescaper *strings.Replacer
 
 	settings SlackSetting
 }
 
-func NewSlackHandler(settings SlackSetting) *SlackHandler {
+func NewSlackHandler(settings SlackSetting, joinState *JoinState) *SlackHandler {
 	var handler SlackHandler
 
 	handler.api = slack.New(
@@ -59,6 +61,8 @@ func NewSlackHandler(settings SlackSetting) *SlackHandler {
 	)
 
 	handler.webhook = slack_webhook.New(settings.Token)
+
+	handler.joinState = joinState
 
 	return &handler
 }
@@ -115,6 +119,13 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 		var content string
 		switch message.Type {
 		case minecraft.MessageTypeJoin:
+			if s.settings.SendJoinStateMessage {
+				err := s.sendUserState()
+				if err != nil {
+					return err
+				}
+			}
+
 			if s.settings.SendOption&(SendSettingJoinLeft|SendSettingAll) == 0 {
 				return nil
 			}
@@ -131,6 +142,13 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 				content = fmt.Sprintf("%s `%s joined the game`", s.settings.Reaction.Join, message.User)
 			}
 		case minecraft.MessageTypeLeft:
+			if s.settings.SendJoinStateMessage {
+				err := s.sendUserState()
+				if err != nil {
+					return err
+				}
+			}
+
 			if s.settings.SendOption&(SendSettingJoinLeft|SendSettingAll) == 0 {
 				return nil
 			}
@@ -318,4 +336,113 @@ func (s *SlackHandler) escapeMessage(content string) (output string, err error) 
 	}
 
 	return s.messageUnescaper.Replace(content), nil
+}
+
+func (s *SlackHandler) sendUserState() error {
+	var VoiceStateMessageText = fmt.Sprintf("MinecraftuserStateMessage,%s", s.webhook.Identity.UserID)
+	var message = slack_webhook.Message{
+		AsUser:   false,
+		Channel:  s.settings.ChannelID,
+		Username: s.settings.UserName,
+		IconURL:  s.settings.AvaterURI,
+		Blocks:   s.buildUserStateBlock(),
+		Text:     VoiceStateMessageText,
+	}
+
+	var ts = s.lastMessageTS
+	if len(s.joinState.State) < 1 {
+		// there are no player
+		if ts == "" {
+			// if not found a last message, find from message history
+			messages, err := s.webhook.GetMessages(s.settings.ChannelID, "", 100)
+			if err == nil {
+				for _, msg := range messages {
+					if msg.Text == VoiceStateMessageText {
+						// *repost user messages contains DummyURIs
+						ts = msg.TS
+						break
+					}
+				}
+			}
+
+			if ts == "" {
+				return nil
+			}
+		}
+		s.lastMessageTS = ""
+		s.webhook.Remove(message.Channel, ts)
+	} else {
+		// there are some players
+		var ts = s.lastMessageTS
+		if ts == "" {
+			// if not found a last message, find from message history
+			messages, err := s.webhook.GetMessages(s.settings.ChannelID, "", 100)
+			if err == nil {
+				for _, msg := range messages {
+					if msg.Text == VoiceStateMessageText {
+						ts = msg.TS
+						break
+					}
+				}
+			}
+			if ts == "" {
+				ts, err := s.webhook.Send(message)
+				if err != nil {
+					return err
+				}
+				s.lastMessageTS = ts
+				return nil
+			}
+		}
+
+		message.TS = ts
+		ts, err := s.webhook.Update(message)
+		if err != nil {
+			return err
+		}
+
+		s.lastMessageTS = ts
+	}
+
+	return nil
+}
+
+func (s *SlackHandler) buildUserStateBlock() []slack_webhook.BlockBase {
+	var blocks = []slack_webhook.BlockBase{}
+
+	var channelText = "UserLoginState"
+	var channelNameElement = slack_webhook.MrkdwnElement(channelText)
+
+	blocks = append(
+		blocks,
+		slack_webhook.ContextBlock(channelNameElement),
+	)
+
+	var userCount int
+	var elements = []slack_webhook.BlockElement{}
+
+	for username := range s.joinState.State {
+		var userImage = mcheads.GetAvaterURI(username)
+		var imageElm = slack_webhook.ImageElement(userImage, username)
+		var userElm = slack_webhook.MrkdwnElement(username)
+
+		elements = append(elements, imageElm, userElm)
+
+		userCount++
+		if userCount%4 == 0 {
+			var block = slack_webhook.ContextBlock(elements...)
+			blocks = append(blocks, block)
+
+			elements = []slack_webhook.BlockElement{}
+		}
+	}
+
+	if userCount%4 > 0 {
+		var block = slack_webhook.ContextBlock(elements...)
+		blocks = append(blocks, block)
+	}
+
+	blocks = append(blocks, slack_webhook.DividerBlock())
+
+	return blocks
 }

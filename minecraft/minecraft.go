@@ -49,8 +49,6 @@ type Message struct {
 	User string
 }
 
-const deathMessageTxt = "death.txt"
-
 // NewHandler makes new minecraft handler
 func NewHandler(settings Setting) *Handler {
 	return &Handler{settings: settings, process: process.Process{}}
@@ -139,7 +137,6 @@ func (m *Handler) sendMessages() chan Message {
 				}
 
 				message.User = joinedOrLeftRegExp.FindStringSubmatch(text)[1]
-
 				text = joinedOrLeftRegExp.ReplaceAllString(text, "$1 $2 $3")
 			case reachedTheGoalRegExp.MatchString(text) || madeTheAdvRegExp.MatchString(text):
 				message.Type = MessageTypeReachedTheAdvancement

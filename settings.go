@@ -61,10 +61,10 @@ type SlackSetting struct {
 
 	ChannelID string
 
-	SendOption      SendSetting
-	SendAllMessages bool
-
-	AddOnlineNumber bool
+	SendOption           SendSetting
+	SendAllMessages      bool
+	SendJoinStateMessage bool
+	AddOnlineNumber      bool
 
 	Reaction ReactionSetting
 

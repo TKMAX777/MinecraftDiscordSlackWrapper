@@ -19,6 +19,7 @@ DiscordやSlackにMinecraftの出力内容を垂れ流すプログラム。つ�
     - [参考 - sayコマンドの自動付加 -](#参考---sayコマンドの自動付加--)
         - [Discord](#discord)
         - [Slack](#slack)
+    - [参考 - SendJoinStateMessages -](#参考---sendjoinstatemessages--)
 
 <!-- /TOC -->
 
@@ -68,6 +69,7 @@ DiscordやSlackにMinecraftの出力内容を垂れ流すプログラム。つ�
         "UserName": "MinecraftWrapper",
         "SendOption": 後述の数値,
         "AddOnlineNumber": true,(これをすると、Join/Leftの後にオンライン人数が表示される)
+        "SendJoinStateMessage":true,
 
         "ChannelID": "ChannelID",
 
@@ -232,3 +234,13 @@ SlackではDiscordと異なり、ユーザごとの設定は採用していま�
 ### Slack 
 
 `settings.json` 内に `"SendAllMessages": true` を追加します。
+
+## 参考 - SendJoinStateMessages -
+
+Slackの設定に関して、次のオプションを指定する場合、次のようなフォーマットのユーザ一覧が表示されるようになります。
+
+```json
+"SendJoinStateMessage":true
+```
+
+![SendJoinStateMessage](https://gyazo.com/b7327b2af897355258819807b4692be2.png)

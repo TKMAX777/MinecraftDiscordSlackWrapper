@@ -22,15 +22,17 @@ type DiscordHandler struct {
 	webhook *discord_webhook.Handler
 
 	serverType string
+	joinState  *JoinState
 
 	settings DiscordSetting
 }
 
-func NewDiscordHandler(settings DiscordSetting) *DiscordHandler {
+func NewDiscordHandler(settings DiscordSetting, joinState *JoinState) *DiscordHandler {
 	var handler = &DiscordHandler{
-		webhook:  discord_webhook.New(settings.Token),
-		settings: settings,
-		idRegExp: regexp.MustCompile(`<@!(\d+)>`),
+		webhook:   discord_webhook.New(settings.Token),
+		settings:  settings,
+		joinState: joinState,
+		idRegExp:  regexp.MustCompile(`<@!(\d+)>`),
 	}
 
 	var err = handler.webhook.SetHookURI(settings.HookURI)

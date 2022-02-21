@@ -61,11 +61,12 @@ func main() {
 		}
 	}()
 
+	var joinState = NewJoinState()
 	var messageSenders = []MessageSender{}
 
 	// set up Discord bot
 	if settings.Discord.UseDiscord {
-		var discordHandler = NewDiscordHandler(settings.Discord)
+		var discordHandler = NewDiscordHandler(settings.Discord, &joinState)
 		discordHandler.SetServerType(settings.Minecraft.ServerType)
 
 		messageSenders = append(messageSenders, discordHandler.SendMessageFunction())
@@ -88,7 +89,7 @@ func main() {
 
 	// set up Slack bot
 	if settings.Slack.UseSlack {
-		var slackHandler = NewSlackHandler(settings.Slack)
+		var slackHandler = NewSlackHandler(settings.Slack, &joinState)
 		slackHandler.SetServerType(settings.Minecraft.ServerType)
 
 		messageSenders = append(messageSenders, slackHandler.SendMessageFunction())
@@ -112,6 +113,12 @@ func main() {
 	go func() {
 		// Wait for new messages from minecraft
 		for message := range cMessage {
+			switch message.Type {
+			case minecraft.MessageTypeJoin:
+				joinState.Join(message.User)
+			case minecraft.MessageTypeLeft:
+				joinState.Leave(message.User)
+			}
 			for _, sender := range messageSenders {
 				var err = sender(message)
 				if err != nil {
