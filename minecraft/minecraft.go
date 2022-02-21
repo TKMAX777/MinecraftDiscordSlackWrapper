@@ -38,6 +38,7 @@ const (
 	MessageTypeMessage
 	MessageTypeReachedTheAdvancement
 	MessageTypeThreadINFO
+	MessageTypeDifficultySet
 	MessageTypeOther
 )
 
@@ -93,6 +94,8 @@ func (m *Handler) sendMessages() chan Message {
 	var joinedOrLeftRegExp = regexp.MustCompile(`\]: (\S+) (joined|left) (the game)$`)
 	var reachedTheGoalRegExp = regexp.MustCompile(`\S+ has reached the goal`)
 	var madeTheAdvRegExp = regexp.MustCompile(`\S+ has made the advancement`)
+	var difficultySetRegExp = regexp.MustCompile(`The difficulty has been set to (\S+)`)
+	var difficultyNotSetRegExp = regexp.MustCompile(`The difficulty did not change; it is already set to (\S+)`)
 
 	var infoTextRegExp *regexp.Regexp
 	switch m.settings.ThreadInfoRegExp {
@@ -146,6 +149,9 @@ func (m *Handler) sendMessages() chan Message {
 				text = infoTextRegExp.ReplaceAllString(text, `$1`)
 			case death.Match(text):
 				message.Type = MessageTypeDeath
+				text = infoTextRegExp.ReplaceAllString(text, `$1`)
+			case difficultyNotSetRegExp.MatchString(text) || difficultySetRegExp.MatchString(text):
+				message.Type = MessageTypeDifficultySet
 				text = infoTextRegExp.ReplaceAllString(text, `$1`)
 			case infoTextRegExp.MatchString(text):
 				message.Type = MessageTypeThreadINFO
