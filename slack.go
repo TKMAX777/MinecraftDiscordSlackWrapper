@@ -120,7 +120,7 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 		switch message.Type {
 		case minecraft.MessageTypeJoin:
 			if s.settings.SendJoinStateMessage {
-				err := s.sendUserState()
+				err := s.sendUserState(message.Type)
 				if err != nil {
 					return err
 				}
@@ -143,7 +143,7 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 			}
 		case minecraft.MessageTypeLeft:
 			if s.settings.SendJoinStateMessage {
-				err := s.sendUserState()
+				err := s.sendUserState(message.Type)
 				if err != nil {
 					return err
 				}
@@ -338,7 +338,7 @@ func (s *SlackHandler) escapeMessage(content string) (output string, err error) 
 	return s.messageUnescaper.Replace(content), nil
 }
 
-func (s *SlackHandler) sendUserState() error {
+func (s *SlackHandler) sendUserState(event minecraft.MessageType) error {
 	var VoiceStateMessageText = fmt.Sprintf("MinecraftuserStateMessage,%s", s.webhook.Identity.UserID)
 	var message = slack_webhook.Message{
 		AsUser:   false,
@@ -350,7 +350,8 @@ func (s *SlackHandler) sendUserState() error {
 	}
 
 	var ts = s.lastMessageTS
-	if len(s.joinState.State) < 1 {
+	switch {
+	case len(s.joinState.State) < 1:
 		// there are no player
 		if ts == "" {
 			// if not found a last message, find from message history
@@ -371,7 +372,7 @@ func (s *SlackHandler) sendUserState() error {
 		}
 		s.lastMessageTS = ""
 		s.webhook.Remove(message.Channel, ts)
-	} else {
+	default:
 		// there are some players
 		var ts = s.lastMessageTS
 		if ts == "" {
@@ -385,18 +386,13 @@ func (s *SlackHandler) sendUserState() error {
 					}
 				}
 			}
-			if ts == "" {
-				ts, err := s.webhook.Send(message)
-				if err != nil {
-					return err
-				}
-				s.lastMessageTS = ts
-				return nil
-			}
+		}
+		if ts != "" {
+			s.webhook.Remove(message.Channel, ts)
 		}
 
 		message.TS = ts
-		ts, err := s.webhook.Update(message)
+		ts, err := s.webhook.Send(message)
 		if err != nil {
 			return err
 		}
