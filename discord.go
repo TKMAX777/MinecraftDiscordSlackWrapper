@@ -234,7 +234,27 @@ func (d *DiscordHandler) getMessage(s *discordgo.Session, m *discordgo.MessageCr
 				// escape "@" (target selector)
 				command.Options = strings.ReplaceAll(command.Options, "@", "at_")
 			}
+		case "/difficulty", "difficulty":
+			switch msg[1] {
+			case "p", "peaceful":
+				if d.settings.Difficulty&DifficultyPeaceful == 0 {
+					return
+				}
+			case "e", "easy":
+				if d.settings.Difficulty&DifficultyEasy == 0 {
+					return
+				}
+			case "n", "normal":
+				if d.settings.Difficulty&DifficultyNormal == 0 {
+					return
+				}
+			case "h", "hard":
+				if d.settings.Difficulty&DifficultyHard == 0 {
+					return
+				}
+			}
 
+			command.Options = msg[1]
 		default:
 			command.Options = strings.Join(msg[1:], " ")
 		}

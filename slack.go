@@ -188,6 +188,12 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 			}
 
 			content = message.Message
+		case minecraft.MessageTypeDifficultySet:
+			if s.settings.SendOption&(SendSettingDifficultySet|SendSettingAll) == 0 {
+				return nil
+			}
+
+			content = fmt.Sprintf("%s %s", s.settings.Reaction.DifficultySet, message.Message)
 		case minecraft.MessageTypeOther:
 			if s.settings.SendOption&SendSettingAll == 0 {
 				return nil
@@ -281,6 +287,27 @@ func (s *SlackHandler) getMessage(ev *slackevents.MessageEvent) {
 			}
 
 			command.Options = fmt.Sprintf("[%s]%s", user.Name, command.Options)
+		case "/difficulty", "difficulty":
+			switch msg[1] {
+			case "p", "peaceful":
+				if s.settings.Difficulty&DifficultyPeaceful == 0 {
+					return
+				}
+			case "e", "easy":
+				if s.settings.Difficulty&DifficultyEasy == 0 {
+					return
+				}
+			case "n", "normal":
+				if s.settings.Difficulty&DifficultyNormal == 0 {
+					return
+				}
+			case "h", "hard":
+				if s.settings.Difficulty&DifficultyHard == 0 {
+					return
+				}
+			}
+
+			command.Options = msg[1]
 		default:
 			command.Options = strings.Join(msg[1:], " ")
 		}

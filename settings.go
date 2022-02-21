@@ -12,10 +12,11 @@ type Setting struct {
 type SendSetting int
 
 type ReactionSetting struct {
-	Join        string
-	Left        string
-	Death       string
-	Advancement string
+	Join          string
+	Left          string
+	Death         string
+	Advancement   string
+	DifficultySet string
 }
 
 const (
@@ -25,6 +26,16 @@ const (
 	SendSettingDeath
 	SendSettingMessage
 	SendSettingReachedTheAdvancement
+	SendSettingDifficultySet
+)
+
+type Difficulty int
+
+const (
+	DifficultyPeaceful Difficulty = 1 << iota
+	DifficultyEasy
+	DifficultyNormal
+	DifficultyHard
 )
 
 type DiscordSetting struct {
@@ -45,6 +56,7 @@ type DiscordSetting struct {
 	Reaction ReactionSetting
 
 	Permissions PermissionCode
+	Difficulty  Difficulty
 
 	HookURI   string
 	AvaterURI string
@@ -69,6 +81,7 @@ type SlackSetting struct {
 	Reaction ReactionSetting
 
 	Permissions PermissionCode
+	Difficulty  Difficulty
 
 	AvaterURI string
 	UserName  string
