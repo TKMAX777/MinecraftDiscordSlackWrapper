@@ -16,6 +16,7 @@ DiscordやSlackにMinecraftの出力内容を垂れ流すプログラム。つ�
         - [Discordの場合](#discordの場合)
         - [Slackの場合](#slackの場合)
     - [PermissionCode](#permissioncode)
+    - [DifficultyCode](#difficultycode)
     - [参考 - sayコマンドの自動付加 -](#参考---sayコマンドの自動付加--)
         - [Discord](#discord)
         - [Slack](#slack)
@@ -47,13 +48,15 @@ DiscordやSlackにMinecraftの出力内容を垂れ流すプログラム。つ�
 
 	    "Token": "DiscordToken(UseDiscord2Minecraftがfalseの場合不要)",
         "Permissions": 後述のPermissionCode,
+        "Difficulty": 後述のDifficultyCode,
         "SendAllMessages": true, (Slackに投稿されたメッセージをすべてMinecraftに転送する, Say権限が必要)
 	
         "Reaction": {
                 "Join": "Joinメッセージの頭に付けるリアクション(省略可)",
                 "Left": "Leftメッセージの頭に付けるリアクション(省略可)",
                 "Death": "死亡メッセージ先頭に付けるリアクション(省略可)",
-                "Advancement": "進捗メッセージ先頭に付けるリアクション(省略可)"
+                "Advancement": "進捗メッセージ先頭に付けるリアクション(省略可)",
+                "DifficultySet": "難易度設定メッセージの戦闘に付けるリアクション(省略可)"
         },
 	
         "AvaterURI": "BotのアイコンのURI。お好みで。",
@@ -77,13 +80,15 @@ DiscordやSlackにMinecraftの出力内容を垂れ流すプログラム。つ�
         "EventToken": "xapp-1-***", (UseSlack2Minecraftがfalseの場合不要)
 
         "Permissions": 後述のPermissionCode,
+        "Difficulty": 後述のDifficultyCode,
         "SendAllMessages": true, (Slackに投稿されたメッセージをすべてMinecraftに転送する, Say権限が必要)
         
         "Reaction": {
             "Join": ":revolving_hearts:",
             "Left": ":wave:",
             "Death": ":innocent:",
-            "Advancement": ":party_parrot:"
+            "Advancement": ":party_parrot:",
+            "DifficultySet": ":white_check_mark:"
         }
     },
     "Minecraft": {
@@ -113,6 +118,8 @@ DiscordやSlackにMinecraftの出力内容を垂れ流すプログラム。つ�
 |8|死亡通知|
 |16|メッセージ|
 |32|進捗|
+|64|難易度設定通知|
+
 
 ## 設定 
 ### Discordの場合 
@@ -208,6 +215,17 @@ SlackではDiscordと異なり、ユーザごとの設定は採用していま�
 | Weather | 2305843009213693952 |
 | WhiteList | 4611686018427387904 |
 | WorldBorder | 9223372036854775808 |
+
+## DifficultyCode
+
+DifficultySetで許可する難易度
+
+| Permission | Code |
+| --- | --- |
+|DifficultyPeaceful|1|
+|DifficultyEasy|2|
+|DifficultyNormal|4|
+|DifficultyHard|8|
 
 ## 参考 - sayコマンドの自動付加 -
 ### Discord
