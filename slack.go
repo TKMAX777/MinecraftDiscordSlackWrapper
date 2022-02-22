@@ -439,7 +439,7 @@ func (s *SlackHandler) sendUserState(event minecraft.MessageType) error {
 func (s *SlackHandler) buildUserStateBlock() []slack_webhook.BlockBase {
 	var blocks = []slack_webhook.BlockBase{}
 
-	var channelText = "UserLoginState"
+	var channelText = "Logon Users"
 	var channelNameElement = slack_webhook.MrkdwnElement(channelText)
 
 	blocks = append(
