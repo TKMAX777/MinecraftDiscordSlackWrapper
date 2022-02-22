@@ -10,7 +10,7 @@ import (
 const McHeadsAPIendpoint = "https://mc-heads.net"
 
 func GetAvaterURI(identifier string) string {
-	return McHeadsAPIendpoint + "/avatar/" + identifier
+	return McHeadsAPIendpoint + "/avatar/" + identifier + ".png"
 }
 
 func GetAvater(identifier string) (io.ReadCloser, error) {

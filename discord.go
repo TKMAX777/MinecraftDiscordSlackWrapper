@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/TKMAX777/MinecraftDiscordWrapper/discord_webhook"
+	"github.com/TKMAX777/MinecraftDiscordWrapper/mcheads"
 	"github.com/TKMAX777/MinecraftDiscordWrapper/minecraft"
 	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
@@ -68,7 +69,10 @@ func (d *DiscordHandler) SendMessageFunction() MessageSender {
 	var onlineUserNum int
 
 	return MessageSender(func(message minecraft.Message) error {
-		var content string
+		var dMessage = discord_webhook.Message{
+			UserName:  d.settings.UserName,
+			AvaterURL: d.settings.AvaterURI,
+		}
 		switch message.Type {
 		case minecraft.MessageTypeJoin:
 			if d.settings.SendOption&(SendSettingJoinLeft|SendSettingAll) == 0 {
@@ -79,12 +83,12 @@ func (d *DiscordHandler) SendMessageFunction() MessageSender {
 			if d.settings.AddOnlineNumber {
 				switch onlineUserNum {
 				case 0, 1:
-					content = fmt.Sprintf("%s `%s joined the game`\nActive: %d player", d.settings.Reaction.Join, message.User, onlineUserNum)
+					dMessage.Content = fmt.Sprintf("%s `%s joined the game`\nActive: %d player", d.settings.Reaction.Join, message.User, onlineUserNum)
 				default:
-					content = fmt.Sprintf("%s `%s joined the game`\nActive: %d players", d.settings.Reaction.Join, message.User, onlineUserNum)
+					dMessage.Content = fmt.Sprintf("%s `%s joined the game`\nActive: %d players", d.settings.Reaction.Join, message.User, onlineUserNum)
 				}
 			} else {
-				content = fmt.Sprintf("%s `%s joined the game`", d.settings.Reaction.Join, message.User)
+				dMessage.Content = fmt.Sprintf("%s `%s joined the game`", d.settings.Reaction.Join, message.User)
 			}
 		case minecraft.MessageTypeLeft:
 			if d.settings.SendOption&(SendSettingJoinLeft|SendSettingAll) == 0 {
@@ -95,50 +99,53 @@ func (d *DiscordHandler) SendMessageFunction() MessageSender {
 			if d.settings.AddOnlineNumber {
 				switch onlineUserNum {
 				case 0, 1:
-					content = fmt.Sprintf("%s `%s left the game`\nActive: %d player", d.settings.Reaction.Left, message.User, onlineUserNum)
+					dMessage.Content = fmt.Sprintf("%s `%s left the game`\nActive: %d player", d.settings.Reaction.Left, message.User, onlineUserNum)
 				default:
-					content = fmt.Sprintf("%s `%s left the game`\nActive: %d players", d.settings.Reaction.Left, message.User, onlineUserNum)
+					dMessage.Content = fmt.Sprintf("%s `%s left the game`\nActive: %d players", d.settings.Reaction.Left, message.User, onlineUserNum)
 				}
 			} else {
-				content = fmt.Sprintf("%s `%s left the game`", d.settings.Reaction.Left, message.User)
+				dMessage.Content = fmt.Sprintf("%s `%s left the game`", d.settings.Reaction.Left, message.User)
 			}
 		case minecraft.MessageTypeThreadINFO:
 			if d.settings.SendOption&(SendSettingThreadINFO|SendSettingAll) == 0 {
 				return nil
 			}
 
-			content = message.Message
+			dMessage.Content = message.Message
 		case minecraft.MessageTypeDeath:
 			if d.settings.SendOption&(SendSettingDeath|SendSettingAll) == 0 {
 				return nil
 			}
 
-			content = fmt.Sprintf("%s %s", d.settings.Reaction.Death, message.Message)
+			dMessage.Content = fmt.Sprintf("%s %s", d.settings.Reaction.Death, message.Message)
 		case minecraft.MessageTypeReachedTheAdvancement:
 			if d.settings.SendOption&(SendSettingReachedTheAdvancement|SendSettingAll) == 0 {
 				return nil
 			}
 
-			content = fmt.Sprintf("%s %s", d.settings.Reaction.Advancement, message.Message)
+			dMessage.Content = fmt.Sprintf("%s %s", d.settings.Reaction.Advancement, message.Message)
 		case minecraft.MessageTypeMessage:
 			if d.settings.SendOption&(SendSettingMessage|SendSettingAll) == 0 {
 				return nil
 			}
+			dMessage.UserName = message.User
+			dMessage.AvaterURL = mcheads.GetAvaterURI(message.User)
+			dMessage.Content = message.Message
+		case minecraft.MessageTypeServermessage:
+			if d.settings.SendOption&(SendSettingMessage|SendSettingAll) == 0 {
+				return nil
+			}
 
-			content = message.Message
+			dMessage.Content = message.Message
 		case minecraft.MessageTypeOther:
 			if d.settings.SendOption&SendSettingAll == 0 {
 				return nil
 			}
 
-			content = message.Message
+			dMessage.Content = message.Message
 		}
 
-		_, err := d.webhook.Send(d.settings.ChannelID, discord_webhook.Message{
-			UserName:  d.settings.UserName,
-			AvaterURL: d.settings.AvaterURI,
-			Content:   content,
-		}, false, nil)
+		_, err := d.webhook.Send(d.settings.ChannelID, dMessage, false, nil)
 
 		return err
 	})

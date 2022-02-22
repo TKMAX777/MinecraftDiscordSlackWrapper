@@ -116,7 +116,12 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 	var onlineUserNum int
 
 	return MessageSender(func(message minecraft.Message) error {
-		var content string
+		var sMessage = slack_webhook.Message{
+			AsUser:   false,
+			Channel:  s.settings.ChannelID,
+			Username: s.settings.UserName,
+			IconURL:  s.settings.AvaterURI,
+		}
 		switch message.Type {
 		case minecraft.MessageTypeJoin:
 			if s.settings.SendJoinStateMessage {
@@ -134,12 +139,12 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 			if s.settings.AddOnlineNumber {
 				switch onlineUserNum {
 				case 0, 1:
-					content = fmt.Sprintf("%s `%s joined the game`\nActive: %d player", s.settings.Reaction.Join, message.User, onlineUserNum)
+					sMessage.Text = fmt.Sprintf("%s `%s joined the game`\nActive: %d player", s.settings.Reaction.Join, message.User, onlineUserNum)
 				default:
-					content = fmt.Sprintf("%s `%s joined the game`\nActive: %d players", s.settings.Reaction.Join, message.User, onlineUserNum)
+					sMessage.Text = fmt.Sprintf("%s `%s joined the game`\nActive: %d players", s.settings.Reaction.Join, message.User, onlineUserNum)
 				}
 			} else {
-				content = fmt.Sprintf("%s `%s joined the game`", s.settings.Reaction.Join, message.User)
+				sMessage.Text = fmt.Sprintf("%s `%s joined the game`", s.settings.Reaction.Join, message.User)
 			}
 		case minecraft.MessageTypeLeft:
 			if s.settings.SendJoinStateMessage {
@@ -157,58 +162,59 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 			if s.settings.AddOnlineNumber {
 				switch onlineUserNum {
 				case 0, 1:
-					content = fmt.Sprintf("%s `%s left the game`\nActive: %d player", s.settings.Reaction.Left, message.User, onlineUserNum)
+					sMessage.Text = fmt.Sprintf("%s `%s left the game`\nActive: %d player", s.settings.Reaction.Left, message.User, onlineUserNum)
 				default:
-					content = fmt.Sprintf("%s `%s left the game`\nActive: %d players", s.settings.Reaction.Left, message.User, onlineUserNum)
+					sMessage.Text = fmt.Sprintf("%s `%s left the game`\nActive: %d players", s.settings.Reaction.Left, message.User, onlineUserNum)
 				}
 			} else {
-				content = fmt.Sprintf("%s `%s left the game`", s.settings.Reaction.Left, message.User)
+				sMessage.Text = fmt.Sprintf("%s `%s left the game`", s.settings.Reaction.Left, message.User)
 			}
 		case minecraft.MessageTypeThreadINFO:
 			if s.settings.SendOption&(SendSettingThreadINFO|SendSettingAll) == 0 {
 				return nil
 			}
 
-			content = message.Message
+			sMessage.Text = message.Message
 		case minecraft.MessageTypeDeath:
 			if s.settings.SendOption&(SendSettingDeath|SendSettingAll) == 0 {
 				return nil
 			}
 
-			content = fmt.Sprintf("%s %s", s.settings.Reaction.Death, message.Message)
+			sMessage.Text = fmt.Sprintf("%s %s", s.settings.Reaction.Death, message.Message)
 		case minecraft.MessageTypeReachedTheAdvancement:
 			if s.settings.SendOption&(SendSettingReachedTheAdvancement|SendSettingAll) == 0 {
 				return nil
 			}
 
-			content = fmt.Sprintf("%s %s", s.settings.Reaction.Advancement, message.Message)
+			sMessage.Text = fmt.Sprintf("%s %s", s.settings.Reaction.Advancement, message.Message)
 		case minecraft.MessageTypeMessage:
 			if s.settings.SendOption&(SendSettingMessage|SendSettingAll) == 0 {
 				return nil
 			}
+			sMessage.Username = message.User
+			sMessage.IconURL = mcheads.GetAvaterURI(message.User)
+			sMessage.Text = message.Message
+		case minecraft.MessageTypeServermessage:
+			if s.settings.SendOption&(SendSettingMessage|SendSettingAll) == 0 {
+				return nil
+			}
 
-			content = message.Message
+			sMessage.Text = message.Message
 		case minecraft.MessageTypeDifficultySet:
 			if s.settings.SendOption&(SendSettingDifficultySet|SendSettingAll) == 0 {
 				return nil
 			}
 
-			content = fmt.Sprintf("%s %s", s.settings.Reaction.DifficultySet, message.Message)
+			sMessage.Text = fmt.Sprintf("%s %s", s.settings.Reaction.DifficultySet, message.Message)
 		case minecraft.MessageTypeOther:
 			if s.settings.SendOption&SendSettingAll == 0 {
 				return nil
 			}
 
-			content = message.Message
+			sMessage.Text = message.Message
 		}
 
-		_, err := s.webhook.Send(slack_webhook.Message{
-			AsUser:   false,
-			Channel:  s.settings.ChannelID,
-			Username: s.settings.UserName,
-			IconURL:  s.settings.AvaterURI,
-			Text:     content,
-		})
+		_, err := s.webhook.Send(sMessage)
 
 		return err
 	})

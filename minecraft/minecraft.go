@@ -36,6 +36,7 @@ const (
 	MessageTypeLeft
 	MessageTypeDeath
 	MessageTypeMessage
+	MessageTypeServermessage
 	MessageTypeReachedTheAdvancement
 	MessageTypeThreadINFO
 	MessageTypeDifficultySet
@@ -140,26 +141,34 @@ func (m *Handler) sendMessages() chan Message {
 				}
 
 				message.User = joinedOrLeftRegExp.FindStringSubmatch(text)[1]
-				text = joinedOrLeftRegExp.ReplaceAllString(text, "$1 $2 $3")
+				message.Message = joinedOrLeftRegExp.ReplaceAllString(text, "$1 $2 $3")
 			case reachedTheGoalRegExp.MatchString(text) || madeTheAdvRegExp.MatchString(text):
 				message.Type = MessageTypeReachedTheAdvancement
-				text = infoTextRegExp.ReplaceAllString(text, `$1`)
-			case messageRegExp.MatchString(text) || serverMessageRegExp.MatchString(text):
+				message.Message = infoTextRegExp.ReplaceAllString(text, `$1`)
+			case messageRegExp.MatchString(text):
 				message.Type = MessageTypeMessage
-				text = infoTextRegExp.ReplaceAllString(text, `$1`)
+
+				var submatch = messageRegExp.FindAllStringSubmatch(text, 1)[0]
+				message.User = submatch[1]
+				message.Message = submatch[2]
+
+			case serverMessageRegExp.MatchString(text):
+				message.Type = MessageTypeServermessage
+				message.Message = infoTextRegExp.ReplaceAllString(text, `$1`)
 			case death.Match(text):
 				message.Type = MessageTypeDeath
-				text = infoTextRegExp.ReplaceAllString(text, `$1`)
+				message.Message = infoTextRegExp.ReplaceAllString(text, `$1`)
 			case difficultyNotSetRegExp.MatchString(text) || difficultySetRegExp.MatchString(text):
 				message.Type = MessageTypeDifficultySet
-				text = infoTextRegExp.ReplaceAllString(text, `$1`)
+				message.Message = infoTextRegExp.ReplaceAllString(text, `$1`)
 			case infoTextRegExp.MatchString(text):
 				message.Type = MessageTypeThreadINFO
-				text = infoTextRegExp.ReplaceAllString(text, `$1`)
+				message.Message = infoTextRegExp.ReplaceAllString(text, `$1`)
 			default:
 				message.Type = MessageTypeOther
+				message.Message = text
 			}
-			message.Message = text
+
 			cMessage <- message
 		}
 	}()
