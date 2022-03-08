@@ -385,7 +385,7 @@ func (s *SlackHandler) sendUserState(event minecraft.MessageType) error {
 	var ts = s.lastMessageTS
 	switch {
 	case len(s.joinState.State) < 1:
-		// there are no player
+		// there is no player
 		if ts == "" {
 			// if not found a last message, find from message history
 			messages, err := s.webhook.GetMessages(s.settings.ChannelID, "", 100)
