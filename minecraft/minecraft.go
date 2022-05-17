@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/TKMAX777/MinecraftDiscordWrapper/process"
+	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/process"
 	"github.com/pkg/errors"
 )
 
