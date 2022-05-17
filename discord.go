@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/TKMAX777/MinecraftDiscordWrapper/discord_webhook"
-	"github.com/TKMAX777/MinecraftDiscordWrapper/mcheads"
-	"github.com/TKMAX777/MinecraftDiscordWrapper/minecraft"
+	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/discord_webhook"
+	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/mcheads"
+	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/minecraft"
 	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
 )
