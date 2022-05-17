@@ -1,6 +1,6 @@
 package main
 
-import "github.com/TKMAX777/MinecraftDiscordWrapper/minecraft"
+import "github.com/TKMAX777/MinecraftDiscordSlackWrapper/minecraft"
 
 // Setting put application settings
 type Setting struct {
