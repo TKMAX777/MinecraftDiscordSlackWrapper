@@ -1,4 +1,4 @@
-module github.com/TKMAX777/MinecraftDiscordWrapper
+module github.com/TKMAX777/MinecraftDiscordSlackWrapper
 
 go 1.16
 
