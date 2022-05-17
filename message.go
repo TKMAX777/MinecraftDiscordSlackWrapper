@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/TKMAX777/MinecraftDiscordWrapper/minecraft"
+	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/minecraft"
 )
 
 // CommandContent put minecraft command content
