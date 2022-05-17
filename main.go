@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/TKMAX777/MinecraftDiscordWrapper/minecraft"
+	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/minecraft"
 	"github.com/pkg/errors"
 )
 
