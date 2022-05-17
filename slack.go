@@ -7,9 +7,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/TKMAX777/MinecraftDiscordWrapper/mcheads"
-	"github.com/TKMAX777/MinecraftDiscordWrapper/minecraft"
-	"github.com/TKMAX777/MinecraftDiscordWrapper/slack_webhook"
+	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/mcheads"
+	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/minecraft"
+	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/slack_webhook"
 	"github.com/pkg/errors"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
