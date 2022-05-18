@@ -187,7 +187,7 @@ func (d *DiscordHandler) getMessage(s *discordgo.Session, m *discordgo.MessageCr
 
 		user.Name = m.Member.Nick
 		if user.Name == "" {
-			user.Name = m.Member.User.Username
+			user.Name = m.Member.Author.Username
 		}
 	}
 
