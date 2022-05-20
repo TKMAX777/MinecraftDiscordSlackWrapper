@@ -136,7 +136,7 @@ DiscordやSlackにMinecraftの出力内容を垂れ流すプログラム。つ�
     {
 	"DiscordID":"DiscordUserID",
 	"Name": "USER_NAME",
-    "PermissionCode": 00000,
+    	"PermissionCode": 00000,
     }
 ]
 ```
