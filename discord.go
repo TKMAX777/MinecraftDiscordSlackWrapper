@@ -60,6 +60,16 @@ func NewDiscordHandler(settings DiscordSetting, joinState *JoinState) *DiscordHa
 	return handler
 }
 
+func (d *DiscordHandler) Close() error {
+	if d.session != nil {
+		d.session.Close()
+	}
+	if d.settings.SendJoinStateMessage && d.lastMessageID != "" {
+		return d.webhook.Delete(d.settings.ChannelID, d.lastMessageID)
+	}
+	return nil
+}
+
 func (d *DiscordHandler) SetCommandInput(stdin chan CommandContent) *DiscordHandler {
 	d.sendChannel = stdin
 	return d

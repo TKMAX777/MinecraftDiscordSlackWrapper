@@ -63,6 +63,7 @@ func main() {
 
 	var joinState = NewJoinState()
 	var messageSenders = []MessageSender{}
+	var closers = []Closer{}
 
 	// set up Discord bot
 	if settings.Discord.UseDiscord {
@@ -87,6 +88,8 @@ func main() {
 				return
 			}
 		}
+
+		closers = append(closers, discordHandler.Close)
 	}
 
 	// set up Slack bot
@@ -136,6 +139,14 @@ func main() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 
 	<-sc
+
 	minecraftHandler.Interrupt()
+	for _, c := range closers {
+		var err = c()
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
 	os.Exit(0)
 }
