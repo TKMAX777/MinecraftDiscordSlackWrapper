@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/pkg/errors"
@@ -44,8 +45,8 @@ type Message struct {
 	ChannelID        string                        `json:"channel_id"`
 	GuildID          string                        `json:"guild_id,omitempty"`
 	Content          string                        `json:"content"`
-	Timestamp        discordgo.Timestamp           `json:"timestamp"`
-	EditedTimestamp  discordgo.Timestamp           `json:"edited_timestamp"`
+	Timestamp        time.Time                     `json:"timestamp"`
+	EditedTimestamp  time.Time                     `json:"edited_timestamp"`
 	MentionRoles     []string                      `json:"mention_roles"`
 	TTS              bool                          `json:"tts"`
 	MentionEveryone  bool                          `json:"mention_everyone"`
@@ -324,6 +325,36 @@ func (h *Handler) send(method, channelID, messageID string, message Message, wai
 	err = json.Unmarshal(buf, &responseAttr)
 
 	return &responseAttr, errors.Wrapf(err, "JsonParsing: %s", buf)
+}
+
+func (h *Handler) Delete(channelID, messageID string) error {
+	req, err := http.NewRequest(
+		"DELETE",
+		fmt.Sprintf("%s/channels/%s/messages/%s", DiscordAPIEndpoint, channelID, messageID),
+		nil,
+	)
+
+	if err != nil {
+		return errors.Wrap(err, "NewRequest")
+	}
+
+	req.Header.Set("Authorization", "Bot "+h.token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "Do")
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return errors.Wrap(err, "ReadAll")
+	}
+
+	if resp.StatusCode != 204 {
+		return errors.New(fmt.Sprintf("DiscordAPIError: %s", body))
+	}
+
+	return nil
 }
 
 func (h *Handler) GetChannelWebhook(channelID string) *discordgo.Webhook {

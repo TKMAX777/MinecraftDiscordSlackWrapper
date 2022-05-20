@@ -1,16 +1,30 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"image"
+	"image/color"
+	"image/png"
+	"io"
 	"log"
+	"math"
 	"regexp"
 	"strings"
+
+	"golang.org/x/image/draw"
 
 	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/discord_webhook"
 	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/mcheads"
 	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/minecraft"
 	"github.com/bwmarrin/discordgo"
+	"github.com/golang/freetype/truetype"
+	"github.com/nfnt/resize"
+
 	"github.com/pkg/errors"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/gofont/gomono"
+	"golang.org/x/image/math/fixed"
 )
 
 // DiscordHandler handles Discord conversations
@@ -24,6 +38,8 @@ type DiscordHandler struct {
 
 	serverType string
 	joinState  *JoinState
+
+	lastMessageID string
 
 	settings DiscordSetting
 }
@@ -55,7 +71,7 @@ func (d *DiscordHandler) SetServerType(serverType string) *DiscordHandler {
 }
 
 func (d *DiscordHandler) StartSession() error {
-	session, err := discordgo.New(d.settings.Token)
+	session, err := discordgo.New("Bot " + d.settings.Token)
 	if err != nil {
 		return errors.Wrap(err, "StartSession")
 	}
@@ -75,6 +91,13 @@ func (d *DiscordHandler) SendMessageFunction() MessageSender {
 		}
 		switch message.Type {
 		case minecraft.MessageTypeJoin:
+			if d.settings.SendJoinStateMessage {
+				err := d.sendUserState(message.Type)
+				if err != nil {
+					return err
+				}
+			}
+
 			if d.settings.SendOption&(SendSettingJoinLeft|SendSettingAll) == 0 {
 				return nil
 			}
@@ -91,6 +114,13 @@ func (d *DiscordHandler) SendMessageFunction() MessageSender {
 				dMessage.Content = fmt.Sprintf("%s `%s joined the game`", d.settings.Reaction.Join, message.User)
 			}
 		case minecraft.MessageTypeLeft:
+			if d.settings.SendJoinStateMessage {
+				err := d.sendUserState(message.Type)
+				if err != nil {
+					return err
+				}
+			}
+
 			if d.settings.SendOption&(SendSettingJoinLeft|SendSettingAll) == 0 {
 				return nil
 			}
@@ -165,9 +195,9 @@ func (d *DiscordHandler) getMessage(s *discordgo.Session, m *discordgo.MessageCr
 		return
 	}
 
-	userDict, err := ReadNameDict()
-	if err != nil {
-		return
+	userDict, _ := ReadNameDict()
+	if userDict == nil {
+		userDict = Users{}
 	}
 
 	var user User
@@ -187,7 +217,7 @@ func (d *DiscordHandler) getMessage(s *discordgo.Session, m *discordgo.MessageCr
 
 		user.Name = m.Member.Nick
 		if user.Name == "" {
-			user.Name = m.Member.Author.Username
+			user.Name = m.Author.Username
 		}
 	}
 
@@ -268,4 +298,194 @@ func (d *DiscordHandler) getMessage(s *discordgo.Session, m *discordgo.MessageCr
 
 		d.sendChannel <- command
 	}
+}
+
+func (d *DiscordHandler) sendUserState(event minecraft.MessageType) error {
+	const LogonPngName = "Logon Users.png"
+
+	var dFiles []discord_webhook.File
+
+	if d.lastMessageID != "" {
+		var err = d.webhook.Delete(d.settings.ChannelID, d.lastMessageID)
+		if err != nil {
+			log.Printf("sendUserState: Delete: %s\n", err.Error())
+		}
+	}
+
+	switch len(d.joinState.State) {
+	case 0:
+		d.lastMessageID = ""
+	default:
+		r, err := d.makeUserStateImage()
+		if err != nil {
+			return errors.Wrap(err, "MakeReactionImage")
+		}
+		dFiles = []discord_webhook.File{
+			{
+				FileName:    LogonPngName,
+				Reader:      r,
+				ContentType: "image/png",
+			},
+		}
+
+		var message = &discord_webhook.Message{
+			UserName:  d.settings.UserName,
+			AvaterURL: d.settings.AvaterURI,
+		}
+		message, err = d.webhook.Send(d.settings.ChannelID, *message, true, dFiles)
+		if err != nil {
+			return errors.Wrap(err, "Send")
+		}
+
+		d.lastMessageID = message.ID
+	}
+
+	return nil
+}
+
+func (d *DiscordHandler) makeUserStateImage() (r io.Reader, err error) {
+	const UserNameSize = 30
+	const imageHeight = 40
+	const imageWidth = 800
+
+	const imageMarginSide = 5
+	const imageMarginLine = 5
+	const userMargin = 5
+
+	const HeadSize = imageHeight - imageMarginLine
+
+	ft, err := truetype.Parse(gomono.TTF)
+	if err != nil {
+		return nil, errors.Wrap(err, "FontParseError")
+	}
+
+	var laneFrames = make([]*image.RGBA, 0)
+	var frame = image.NewRGBA(image.Rect(0, 0, imageWidth, imageHeight))
+
+	var X = imageMarginSide
+	for username := range d.joinState.State {
+		r, err := mcheads.GetAvater(username)
+		if err != nil {
+			log.Println("makeUserStateImage: GetAvater: ", err.Error())
+			continue
+		}
+
+		headImage, _, err := image.Decode(r)
+		if err != nil {
+			log.Println("makeUserStateImage: Decode: ", err.Error())
+			continue
+		}
+
+		headImage = d.resize(headImage, HeadSize)
+
+		var errConunt int
+	again:
+		var dr = &font.Drawer{
+			Dst: frame,
+			Src: image.Black,
+			Face: truetype.NewFace(
+				ft,
+				&truetype.Options{
+					Size: UserNameSize,
+				},
+			),
+			Dot: fixed.Point26_6{},
+		}
+
+		// Confirm that the width occupied by the user does not exceed the image size.
+		if imageWidth < X+headImage.Bounds().Dx()+dr.MeasureString(username).Ceil()+imageMarginSide-userMargin {
+			laneFrames = append(laneFrames, frame)
+			frame = image.NewRGBA(image.Rect(0, 0, imageWidth, imageHeight))
+
+			if errConunt > 1 {
+				log.Println("INFO: makeUserStateImage: UserName too long:", username)
+				continue
+			}
+
+			errConunt++
+			X = imageMarginSide
+
+			goto again
+		}
+
+		var imgPoint = image.Point{X, imageMarginLine}
+		draw.Copy(frame, imgPoint, headImage, headImage.Bounds(), draw.Over, nil)
+
+		dr.Dot.X = fixed.I(headImage.Bounds().Dx() + userMargin + X)
+		dr.Dot.Y = fixed.I(imageHeight)
+
+		dr.DrawString(username)
+
+		X += X + headImage.Bounds().Dx() + dr.MeasureString(username).Ceil() + userMargin
+	}
+
+	laneFrames = append(laneFrames, frame)
+	frame = image.NewRGBA(image.Rect(0, 0, imageWidth, imageHeight*(len(laneFrames)+1)+imageMarginLine))
+	frame = d.fillFrame(frame, color.White)
+
+	var dr = &font.Drawer{
+		Dst: frame,
+		Src: image.Black,
+		Face: truetype.NewFace(
+			ft,
+			&truetype.Options{
+				Size: UserNameSize,
+			},
+		),
+		Dot: fixed.Point26_6{},
+	}
+
+	dr.Dot.X = fixed.I(imageMarginSide)
+	dr.Dot.Y = fixed.I(imageHeight)
+
+	dr.DrawString("<Logon Users>")
+
+	for i := range laneFrames {
+		var imgPoint = image.Point{0, imageHeight * (i + 1)}
+		draw.Copy(frame, imgPoint, laneFrames[i], laneFrames[i].Bounds(), draw.Over, nil)
+	}
+
+	var encodePNG = new(bytes.Buffer)
+	err = png.Encode(encodePNG, frame)
+	if err != nil {
+		return nil, errors.Wrap(err, "Encode")
+	}
+
+	return encodePNG, nil
+}
+
+func (d DiscordHandler) fillFrame(frame *image.RGBA, c color.Color) *image.RGBA {
+	var rect = frame.Rect
+	var newFrame = &image.RGBA{}
+
+	*newFrame = *frame
+
+	for h := rect.Min.Y; h < rect.Max.Y; h++ {
+		for v := rect.Min.X; v < rect.Max.X; v++ {
+			newFrame.Set(v, h, c)
+		}
+	}
+
+	return newFrame
+}
+
+func (d DiscordHandler) resize(srcImage image.Image, MaxSize int) *image.RGBA {
+	// resize png, jpg
+	var width, height = float64(srcImage.Bounds().Size().X), float64(srcImage.Bounds().Size().Y)
+
+	var ratio float64
+	if width > height {
+		ratio = float64(MaxSize) / width
+	} else {
+		ratio = float64(MaxSize) / height
+	}
+	srcImage = resize.Resize(
+		uint(math.Floor(width*ratio)),
+		uint(math.Floor(height*ratio)),
+		srcImage, resize.Lanczos3,
+	)
+	resizedImage := image.NewRGBA(srcImage.Bounds())
+	draw.FloydSteinberg.Draw(resizedImage, srcImage.Bounds(), srcImage, image.Point{})
+
+	return resizedImage
 }
