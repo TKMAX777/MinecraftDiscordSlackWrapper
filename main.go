@@ -71,12 +71,14 @@ func main() {
 
 		messageSenders = append(messageSenders, discordHandler.SendMessageFunction())
 
-		if settings.Discord.UseDiscord2Minecraft {
+		if settings.Discord.SendJoinStateMessage || settings.Discord.UseDiscord2Minecraft {
 			if settings.Discord.Token == "" {
 				log.Println("No Discord Token provided")
 				return
 			}
+		}
 
+		if settings.Discord.UseDiscord2Minecraft {
 			discordHandler.SetCommandInput(stdin)
 
 			err = discordHandler.StartSession()
