@@ -405,7 +405,7 @@ func (d *DiscordHandler) makeUserStateImage() (r io.Reader, err error) {
 		// Confirm that the width occupied by the user does not exceed the image size.
 		if imageWidth < X+headImage.Bounds().Dx()+dr.MeasureString(username).Ceil()+imageMarginSide-userMargin {
 			laneFrames = append(laneFrames, frame)
-			frame = image.NewRGBA(image.Rect(0, 0, imageWidth, imageHeight))
+			frame = image.NewRGBA(image.Rect(0, 0, imageWidth, imageHeight*2))
 
 			if errConunt > 1 {
 				log.Println("INFO: makeUserStateImage: UserName too long:", username)
