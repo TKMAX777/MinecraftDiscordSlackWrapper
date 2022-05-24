@@ -43,13 +43,14 @@ DiscordやSlackにMinecraftの出力内容を垂れ流すプログラム。つ�
         "SendOption": 後述の数値,
         "AddOnlineNumber": true,(これをすると、Join/Leftの後にオンライン人数が表示される)
 
-	    "GuildID": "用いるDiscordサーバのGuildID",
+    	"GuildID": "用いるDiscordサーバのGuildID",
         "ChannelID": "ChannelID",
 
-	    "Token": "DiscordToken(UseDiscord2Minecraftがfalseの場合不要)",
+    	"Token": "DiscordToken(UseDiscord2Minecraftがfalseの場合不要)",
         "Permissions": 後述のPermissionCode,
         "Difficulty": 後述のDifficultyCode,
-        "SendAllMessages": true, (Slackに投稿されたメッセージをすべてMinecraftに転送する, Say権限が必要)
+        "SendAllMessages": true, (Discordに投稿されたメッセージをすべてMinecraftに転送する, Say権限が必要)
+	"SendJoinStateMessage":true, (ユーザ一覧を示した画像を表示する. Manage Messageを持ったDiscord Tokenが必要)
 	
         "Reaction": {
                 "Join": "Joinメッセージの頭に付けるリアクション(省略可)",
@@ -135,7 +136,7 @@ DiscordやSlackにMinecraftの出力内容を垂れ流すプログラム。つ�
     {
 	"DiscordID":"DiscordUserID",
 	"Name": "USER_NAME",
-    "PermissionCode": 00000,
+    	"PermissionCode": 00000,
     }
 ]
 ```
