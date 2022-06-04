@@ -5,3 +5,8 @@ dist/
 *.txt
 *.jar
 server.properties
+logs
+world*
+versions
+libraries
+cache
