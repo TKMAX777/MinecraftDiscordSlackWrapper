@@ -1,2 +1,7 @@
 
 dist/
+*.json
+*.yml
+*.txt
+*.jar
+server.properties
