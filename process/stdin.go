@@ -1,14 +1,14 @@
 package process
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
 )
 
 // StdinWriteCloser wraps io.WriteCloser
-//    start method starts synchronizing process's stdin with stdin
+//
+//	start method starts synchronizing process's stdin with stdin
 type StdinWriteCloser struct {
 	writeCloser io.WriteCloser
 }
@@ -21,11 +21,12 @@ func NewStdin(w io.WriteCloser) *StdinWriteCloser {
 }
 
 func (w StdinWriteCloser) start() {
-	var input []byte
 	var err error
+	var buf = make([]byte, 100)
+	var n, m, i int
 
 	for {
-		input, err = w.scan()
+		n, err = os.Stdin.Read(buf)
 		switch err {
 		case nil:
 		case io.EOF:
@@ -35,30 +36,16 @@ func (w StdinWriteCloser) start() {
 			continue
 		}
 
-		_, err = w.Write(append(input, []byte("\n")...))
-		if err != nil {
-			fmt.Printf("(Input)Error:%s\n", err.Error())
-			continue
+		m = 0
+		for m < n {
+			i, err = w.writeCloser.Write(buf[m:n])
+			if err != nil {
+				fmt.Printf("(Input)Error:%s\n", err.Error())
+				return
+			}
+			m += i
 		}
 	}
-}
-
-func (w StdinWriteCloser) scan() ([]byte, error) {
-	var rdr = bufio.NewReaderSize(os.Stdin, bufio.MaxScanTokenSize)
-	var buf []byte = []byte{}
-
-	for {
-		l, p, e := rdr.ReadLine()
-		if e != nil {
-			return nil, e
-		}
-		buf = append(buf, l...)
-
-		if !p {
-			break
-		}
-	}
-	return buf, nil
 }
 
 func (w StdinWriteCloser) Write(p []byte) (n int, err error) {
