@@ -117,12 +117,12 @@ func (d *DiscordHandler) SendMessageFunction() MessageSender {
 			if d.settings.AddOnlineNumber {
 				switch onlineUserNum {
 				case 0, 1:
-					dMessage.Content = fmt.Sprintf("%s `%s joined the game`\nActive: %d player", d.settings.Reaction.Join, message.User, onlineUserNum)
+					dMessage.Content = fmt.Sprintf(":%s: `%s joined the game`\nActive: %d player", d.settings.Reaction.Join, message.User, onlineUserNum)
 				default:
-					dMessage.Content = fmt.Sprintf("%s `%s joined the game`\nActive: %d players", d.settings.Reaction.Join, message.User, onlineUserNum)
+					dMessage.Content = fmt.Sprintf(":%s: `%s joined the game`\nActive: %d players", d.settings.Reaction.Join, message.User, onlineUserNum)
 				}
 			} else {
-				dMessage.Content = fmt.Sprintf("%s `%s joined the game`", d.settings.Reaction.Join, message.User)
+				dMessage.Content = fmt.Sprintf(":%s: `%s joined the game`", d.settings.Reaction.Join, message.User)
 			}
 		case minecraft.MessageTypeLeft:
 			if d.settings.SendJoinStateMessage {
@@ -140,12 +140,12 @@ func (d *DiscordHandler) SendMessageFunction() MessageSender {
 			if d.settings.AddOnlineNumber {
 				switch onlineUserNum {
 				case 0, 1:
-					dMessage.Content = fmt.Sprintf("%s `%s left the game`\nActive: %d player", d.settings.Reaction.Left, message.User, onlineUserNum)
+					dMessage.Content = fmt.Sprintf(":%s: `%s left the game`\nActive: %d player", d.settings.Reaction.Left, message.User, onlineUserNum)
 				default:
-					dMessage.Content = fmt.Sprintf("%s `%s left the game`\nActive: %d players", d.settings.Reaction.Left, message.User, onlineUserNum)
+					dMessage.Content = fmt.Sprintf(":%s: `%s left the game`\nActive: %d players", d.settings.Reaction.Left, message.User, onlineUserNum)
 				}
 			} else {
-				dMessage.Content = fmt.Sprintf("%s `%s left the game`", d.settings.Reaction.Left, message.User)
+				dMessage.Content = fmt.Sprintf(":%s: `%s left the game`", d.settings.Reaction.Left, message.User)
 			}
 		case minecraft.MessageTypeThreadINFO:
 			if !(d.settings.SendOption.All || d.settings.SendOption.ThreadINFO) {
@@ -158,13 +158,13 @@ func (d *DiscordHandler) SendMessageFunction() MessageSender {
 				return nil
 			}
 
-			dMessage.Content = fmt.Sprintf("%s %s", d.settings.Reaction.Death, message.Message)
+			dMessage.Content = fmt.Sprintf(":%s: %s", d.settings.Reaction.Death, message.Message)
 		case minecraft.MessageTypeReachedTheAdvancement:
 			if !(d.settings.SendOption.All || d.settings.SendOption.ReachedTheAdvancement) {
 				return nil
 			}
 
-			dMessage.Content = fmt.Sprintf("%s %s", d.settings.Reaction.Advancement, message.Message)
+			dMessage.Content = fmt.Sprintf(":%s: %s", d.settings.Reaction.Advancement, message.Message)
 		case minecraft.MessageTypeMessage:
 			if !(d.settings.SendOption.All || d.settings.SendOption.Message) {
 				return nil

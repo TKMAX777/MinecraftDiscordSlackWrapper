@@ -139,12 +139,12 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 			if s.settings.AddOnlineNumber {
 				switch onlineUserNum {
 				case 0, 1:
-					sMessage.Text = fmt.Sprintf("%s `%s joined the game`\nActive: %d player", s.settings.Reaction.Join, message.User, onlineUserNum)
+					sMessage.Text = fmt.Sprintf(":%s: `%s joined the game`\nActive: %d player", s.settings.Reaction.Join, message.User, onlineUserNum)
 				default:
-					sMessage.Text = fmt.Sprintf("%s `%s joined the game`\nActive: %d players", s.settings.Reaction.Join, message.User, onlineUserNum)
+					sMessage.Text = fmt.Sprintf(":%s: `%s joined the game`\nActive: %d players", s.settings.Reaction.Join, message.User, onlineUserNum)
 				}
 			} else {
-				sMessage.Text = fmt.Sprintf("%s `%s joined the game`", s.settings.Reaction.Join, message.User)
+				sMessage.Text = fmt.Sprintf(":%s: `%s joined the game`", s.settings.Reaction.Join, message.User)
 			}
 		case minecraft.MessageTypeLeft:
 			if s.settings.SendJoinStateMessage {
@@ -162,12 +162,12 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 			if s.settings.AddOnlineNumber {
 				switch onlineUserNum {
 				case 0, 1:
-					sMessage.Text = fmt.Sprintf("%s `%s left the game`\nActive: %d player", s.settings.Reaction.Left, message.User, onlineUserNum)
+					sMessage.Text = fmt.Sprintf(":%s: `%s left the game`\nActive: %d player", s.settings.Reaction.Left, message.User, onlineUserNum)
 				default:
-					sMessage.Text = fmt.Sprintf("%s `%s left the game`\nActive: %d players", s.settings.Reaction.Left, message.User, onlineUserNum)
+					sMessage.Text = fmt.Sprintf(":%s: `%s left the game`\nActive: %d players", s.settings.Reaction.Left, message.User, onlineUserNum)
 				}
 			} else {
-				sMessage.Text = fmt.Sprintf("%s `%s left the game`", s.settings.Reaction.Left, message.User)
+				sMessage.Text = fmt.Sprintf(":%s: `%s left the game`", s.settings.Reaction.Left, message.User)
 			}
 		case minecraft.MessageTypeThreadINFO:
 			if !(s.settings.SendOption.All || s.settings.SendOption.ThreadINFO) {
@@ -180,13 +180,13 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 				return nil
 			}
 
-			sMessage.Text = fmt.Sprintf("%s %s", s.settings.Reaction.Death, message.Message)
+			sMessage.Text = fmt.Sprintf(":%s: %s", s.settings.Reaction.Death, message.Message)
 		case minecraft.MessageTypeReachedTheAdvancement:
 			if !(s.settings.SendOption.All || s.settings.SendOption.ReachedTheAdvancement) {
 				return nil
 			}
 
-			sMessage.Text = fmt.Sprintf("%s %s", s.settings.Reaction.Advancement, message.Message)
+			sMessage.Text = fmt.Sprintf(":%s: %s", s.settings.Reaction.Advancement, message.Message)
 		case minecraft.MessageTypeMessage:
 			if !(s.settings.SendOption.All || s.settings.SendOption.Message) {
 				return nil
@@ -205,7 +205,7 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 				return nil
 			}
 
-			sMessage.Text = fmt.Sprintf("%s %s", s.settings.Reaction.DifficultySet, message.Message)
+			sMessage.Text = fmt.Sprintf(":%s: %s", s.settings.Reaction.DifficultySet, message.Message)
 		case minecraft.MessageTypeOther:
 			if !s.settings.SendOption.All {
 				return nil
