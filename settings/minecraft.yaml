@@ -1,0 +1,8 @@
+Minecraft:
+  ThreadInfoRegExp: '\[\d{2}:\d{2}:\d{2}\ INFO\]: (.+)' # paper example
+  JAVA: ''
+  CustomBinaryPath: ''
+  ServerType: paper
+  Options:
+    - -Xms1G
+    - -Xmx6G

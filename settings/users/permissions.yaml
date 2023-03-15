@@ -1,0 +1,4 @@
+Permissions:
+  everyone:
+    - say
+    - difficulty\s+(easy|normal|hard)

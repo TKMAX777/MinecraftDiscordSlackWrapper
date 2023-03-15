@@ -11,6 +11,5 @@ versions
 libraries
 cache
 plugins/
-settings/
 MinecraftDiscordSlackWrapper*
 .console_history

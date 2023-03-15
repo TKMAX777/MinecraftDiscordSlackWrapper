@@ -1,0 +1,30 @@
+Slack:
+  UseSlack: false 
+  UseSlack2Minecraft: false # Enable Controlling from Slack
+
+  Token: xoxb-***************************
+  EventToken: xapp-1-*****************************
+
+  ChannelID: CXXXXXXXX # Slack Channel ID
+
+  SendOption:
+    All: false
+    ThreadINFO: false
+    JoinLeft: true
+    Death: true
+    Message: true
+    ReachedTheAdvancement: true
+    DifficultySet: true
+  SendAllMessage: true # Slack to Minecraft Chats
+  SendJoinStateMessage: true 
+  AddOnlineNumber: true 
+
+  Reaction:
+      Join: revolving_hearts
+      Left: wave
+      Death: innocent
+      Advancement: party_parrot
+      DifficultySet: white_check_mark
+
+  AvaterURI: 'https://**********************************************'
+  UserName: MinecraftWrapper

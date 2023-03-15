@@ -1,0 +1,30 @@
+Discord:
+  UseDiscord: false
+  UseDiscord2Minecraft: false
+
+  Token: ************************************
+
+  GuildID: 00000000000000000
+  ChannelID: 00000000000000000
+
+  SendOption:
+    All: false
+    ThreadINFO: false
+    JoinLeft: true
+    Death: false
+    Message: false
+    ReachedTheAdvancement: false
+    DifficultySet: false
+  SendAllMessages: false
+  SendJoinStateMessage: true
+  AddOnlineNumber: true
+  Reaction:
+      Join: revolving_hearts
+      Left: wave
+      Death: innocent
+      Advancement: party_parrot
+      DifficultySet: white_check_mark
+
+  HookURI: 'https://discord.com/api/webhooks/**************/************************'
+  AvaterURI: 'https://**********************************************'
+  UserName: MinecraftWrapper
