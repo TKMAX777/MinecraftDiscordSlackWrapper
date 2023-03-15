@@ -31,7 +31,6 @@ func (p *Process) Interrupt() {
 func (p *Process) Kill() {
 	p.pipe.Close()
 	p.cmd.Process.Kill()
-	return
 }
 
 // Start excutes the commmand

@@ -22,11 +22,11 @@ type Handler struct {
 }
 
 type Setting struct {
-	ThreadInfoRegExp string
-	JAVA             string
-	CustomBinaryPath string
-	ServerType       string
-	Options          []string
+	ThreadInfoRegExp string   `yaml:"ThreadInfoRegExp"`
+	JAVA             string   `yaml:"JAVA"`
+	CustomBinaryPath string   `yaml:"CustomBinaryPath"`
+	ServerType       string   `yaml:"ServerType"`
+	Options          []string `yaml:"Options"`
 }
 
 type MessageType int
@@ -187,7 +187,8 @@ func (m *Handler) Kill() {
 }
 
 // Pipes returns minecrafts process stdin / stderr pipes
-//    these pipes are automatically closed when the process killed by Handler.Stop()
+//
+//	these pipes are automatically closed when the process killed by Handler.Stop()
 func (m *Handler) Pipes() (stdin io.WriteCloser, stderr io.ReadCloser) {
 	return m.stdin, m.stderr
 }

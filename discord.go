@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"os"
 	"regexp"
 	"strings"
 
@@ -108,7 +109,7 @@ func (d *DiscordHandler) SendMessageFunction() MessageSender {
 				}
 			}
 
-			if d.settings.SendOption&(SendSettingJoinLeft|SendSettingAll) == 0 {
+			if !d.settings.SendOption.All && !d.settings.SendOption.JoinLeft {
 				return nil
 			}
 
@@ -131,7 +132,7 @@ func (d *DiscordHandler) SendMessageFunction() MessageSender {
 				}
 			}
 
-			if d.settings.SendOption&(SendSettingJoinLeft|SendSettingAll) == 0 {
+			if !(d.settings.SendOption.All || d.settings.SendOption.JoinLeft) {
 				return nil
 			}
 
@@ -147,38 +148,38 @@ func (d *DiscordHandler) SendMessageFunction() MessageSender {
 				dMessage.Content = fmt.Sprintf("%s `%s left the game`", d.settings.Reaction.Left, message.User)
 			}
 		case minecraft.MessageTypeThreadINFO:
-			if d.settings.SendOption&(SendSettingThreadINFO|SendSettingAll) == 0 {
+			if !(d.settings.SendOption.All || d.settings.SendOption.ThreadINFO) {
 				return nil
 			}
 
 			dMessage.Content = message.Message
 		case minecraft.MessageTypeDeath:
-			if d.settings.SendOption&(SendSettingDeath|SendSettingAll) == 0 {
+			if !(d.settings.SendOption.All || d.settings.SendOption.Death) {
 				return nil
 			}
 
 			dMessage.Content = fmt.Sprintf("%s %s", d.settings.Reaction.Death, message.Message)
 		case minecraft.MessageTypeReachedTheAdvancement:
-			if d.settings.SendOption&(SendSettingReachedTheAdvancement|SendSettingAll) == 0 {
+			if !(d.settings.SendOption.All || d.settings.SendOption.ReachedTheAdvancement) {
 				return nil
 			}
 
 			dMessage.Content = fmt.Sprintf("%s %s", d.settings.Reaction.Advancement, message.Message)
 		case minecraft.MessageTypeMessage:
-			if d.settings.SendOption&(SendSettingMessage|SendSettingAll) == 0 {
+			if !(d.settings.SendOption.All || d.settings.SendOption.Message) {
 				return nil
 			}
 			dMessage.UserName = message.User
 			dMessage.AvaterURL = mcheads.GetAvaterURI(message.User)
 			dMessage.Content = message.Message
 		case minecraft.MessageTypeServermessage:
-			if d.settings.SendOption&(SendSettingMessage|SendSettingAll) == 0 {
+			if !(d.settings.SendOption.All || d.settings.SendOption.Message) {
 				return nil
 			}
 
 			dMessage.Content = message.Message
 		case minecraft.MessageTypeOther:
-			if d.settings.SendOption&SendSettingAll == 0 {
+			if !d.settings.SendOption.All {
 				return nil
 			}
 
@@ -205,63 +206,58 @@ func (d *DiscordHandler) getMessage(s *discordgo.Session, m *discordgo.MessageCr
 		return
 	}
 
-	userDict, _ := ReadNameDict()
-	if userDict == nil {
-		userDict = Users{}
+	userSettings, err := GetUsersSettings()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, errors.Wrap(err, "GetUsersSettings").Error())
+		return
 	}
 
-	var user User
-	user, ok := userDict.findUserFromDiscordID(m.Author.ID)
-	if !ok {
-		if d.settings.Permissions != 0 {
-			user = User{
-				PermissionCode:  d.settings.Permissions,
-				SendAllMessages: d.settings.SendAllMessages,
-			}
-		} else {
-			user, ok = userDict.findUserFromDiscordID("Default")
-			if !ok {
-				return
-			}
-		}
+	user := userSettings.GetUser(m.Author.ID, ServiceTypeDiscord)
 
-		user.Name = m.Member.Nick
-		if user.Name == "" {
-			user.Name = m.Author.Username
-		}
+	user.Name = m.Member.Nick
+	if user.Name == "" {
+		user.Name = m.Author.Username
 	}
 
 	for _, text := range strings.Split(m.Message.Content, "\n") {
 		var command CommandContent
-		var msg = strings.Split(text, " ")
+		var msg = strings.Split(strings.TrimSpace(text), " ")
 
-		var permissions = GetPermissions(user.PermissionCode)
+		var permissions = userSettings.GetPermissions(user.Groups)
+
+		hasPrefixSay, err := permissions.Verify(strings.TrimSpace(text))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, errors.Wrap(err, "Verify").Error())
+			return
+		}
 
 		// check the message has prefix: "say"
 		// if there is the prefix, not escape "@" to "at_"
-		var hasPrefixSay = true
-
-		command.Command, ok = permissions[msg[0]]
-		if !ok {
-			_, ok = permissions["say"]
-			if !ok || !user.SendAllMessages {
+		if !hasPrefixSay {
+			ok, err := permissions.Verify("say")
+			if err != nil {
+				fmt.Fprintf(os.Stderr, errors.Wrap(err, "Verify").Error())
 				return
 			}
+			if !ok {
+				// nothing to do
+				return
+			}
+
+			// send as message
 			msg = append([]string{"say"}, msg...)
-			command.Command = "/say"
-			hasPrefixSay = false
 		}
 
-		if d.serverType == "paper" {
-			command.Command = strings.TrimPrefix(command.Command, "/")
+		command.Command = msg[0]
+
+		// vanilla needs slash to execute commands
+		switch d.serverType {
+		case "vanilla", "":
+			command.Command = "/" + msg[0]
 		}
 
 		if len(msg) < 2 {
 			return
-		}
-
-		if msg[1] == ";" {
-			msg = msg[:1]
 		}
 
 		switch command.Command {
@@ -269,39 +265,28 @@ func (d *DiscordHandler) getMessage(s *discordgo.Session, m *discordgo.MessageCr
 			msg[1] = fmt.Sprintf("[%s]%s", user.Name, msg[1])
 			command.Options = strings.Join(msg[1:], " ")
 
-			for _, match := range d.idRegExp.FindAllStringSubmatch(command.Options, -1) {
-				u, ok := userDict.findUserFromDiscordID(match[1])
-				if !ok {
+			for _, id := range d.idRegExp.FindAllStringSubmatch(command.Options, -1) {
+				// replace Slack User ids
+				if len(id) < 2 {
 					continue
 				}
-				command.Options = strings.ReplaceAll(command.Options, "!"+u.DiscordID, u.Name)
+
+				mem, err := s.GuildMember(m.GuildID, id[1])
+				if err != nil {
+					continue
+				}
+
+				var idName = mem.Nick
+				if idName == "" {
+					idName = mem.User.Username
+				}
+				command.Options = strings.Join(strings.Split(command.Options, "!"+id[1]), idName)
 			}
 
 			if !hasPrefixSay {
 				// escape "@" (target selector)
 				command.Options = strings.ReplaceAll(command.Options, "@", "at_")
 			}
-		case "/difficulty", "difficulty":
-			switch msg[1] {
-			case "p", "peaceful":
-				if d.settings.Difficulty&DifficultyPeaceful == 0 {
-					return
-				}
-			case "e", "easy":
-				if d.settings.Difficulty&DifficultyEasy == 0 {
-					return
-				}
-			case "n", "normal":
-				if d.settings.Difficulty&DifficultyNormal == 0 {
-					return
-				}
-			case "h", "hard":
-				if d.settings.Difficulty&DifficultyHard == 0 {
-					return
-				}
-			}
-
-			command.Options = msg[1]
 		default:
 			command.Options = strings.Join(msg[1:], " ")
 		}

@@ -1,9 +1,7 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -13,27 +11,19 @@ import (
 	"github.com/pkg/errors"
 )
 
-// SettingsFilePath put settings file name
-const SettingsFilePath = "settings.json"
-
 // NameDictPath put name dict file name
 const NameDictPath = "name_dict.json"
 
 func main() {
-	var settings Setting
+	var settings *Setting
 
-	// read settings
-	b, err := ioutil.ReadFile(SettingsFilePath)
+	settings, err := ReadSettings()
 	if err != nil {
 		log.Println(errors.Wrap(err, "ReadSettings"))
 		return
 	}
 
-	err = json.Unmarshal(b, &settings)
-	if err != nil {
-		log.Println(errors.Wrap(err, "UnmarshalSettings"))
-		return
-	}
+	fmt.Printf("%+v\n", settings)
 
 	var minecraftHandler = minecraft.NewHandler(settings.Minecraft)
 
@@ -55,9 +45,15 @@ func main() {
 			if commands.Options == "" {
 				command = commands.Command + "\n"
 			} else {
-				command = fmt.Sprintf("%s %s\n", commands.Command, commands.Options)
+				command = fmt.Sprintf("%s %s \n", commands.Command, commands.Options)
 			}
-			stdinWriter.Write([]byte(command))
+
+			var b = []byte(command)
+			var n = 0
+			for n < len(b) {
+				i, _ := stdinWriter.Write(b[n:])
+				n += i
+			}
 		}
 	}()
 

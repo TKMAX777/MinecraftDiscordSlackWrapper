@@ -131,7 +131,7 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 				}
 			}
 
-			if s.settings.SendOption&(SendSettingJoinLeft|SendSettingAll) == 0 {
+			if !(s.settings.SendOption.All || s.settings.SendOption.JoinLeft) {
 				return nil
 			}
 
@@ -154,7 +154,7 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 				}
 			}
 
-			if s.settings.SendOption&(SendSettingJoinLeft|SendSettingAll) == 0 {
+			if !(s.settings.SendOption.All || s.settings.SendOption.JoinLeft) {
 				return nil
 			}
 
@@ -170,44 +170,44 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 				sMessage.Text = fmt.Sprintf("%s `%s left the game`", s.settings.Reaction.Left, message.User)
 			}
 		case minecraft.MessageTypeThreadINFO:
-			if s.settings.SendOption&(SendSettingThreadINFO|SendSettingAll) == 0 {
+			if !(s.settings.SendOption.All || s.settings.SendOption.ThreadINFO) {
 				return nil
 			}
 
 			sMessage.Text = message.Message
 		case minecraft.MessageTypeDeath:
-			if s.settings.SendOption&(SendSettingDeath|SendSettingAll) == 0 {
+			if !(s.settings.SendOption.All || s.settings.SendOption.Death) {
 				return nil
 			}
 
 			sMessage.Text = fmt.Sprintf("%s %s", s.settings.Reaction.Death, message.Message)
 		case minecraft.MessageTypeReachedTheAdvancement:
-			if s.settings.SendOption&(SendSettingReachedTheAdvancement|SendSettingAll) == 0 {
+			if !(s.settings.SendOption.All || s.settings.SendOption.ReachedTheAdvancement) {
 				return nil
 			}
 
 			sMessage.Text = fmt.Sprintf("%s %s", s.settings.Reaction.Advancement, message.Message)
 		case minecraft.MessageTypeMessage:
-			if s.settings.SendOption&(SendSettingMessage|SendSettingAll) == 0 {
+			if !(s.settings.SendOption.All || s.settings.SendOption.Message) {
 				return nil
 			}
 			sMessage.Username = message.User
 			sMessage.IconURL = mcheads.GetAvaterURI(message.User)
 			sMessage.Text = message.Message
 		case minecraft.MessageTypeServermessage:
-			if s.settings.SendOption&(SendSettingMessage|SendSettingAll) == 0 {
+			if !(s.settings.SendOption.All || s.settings.SendOption.Message) {
 				return nil
 			}
 
 			sMessage.Text = message.Message
 		case minecraft.MessageTypeDifficultySet:
-			if s.settings.SendOption&(SendSettingDifficultySet|SendSettingAll) == 0 {
+			if !(s.settings.SendOption.All || s.settings.SendOption.DifficultySet) {
 				return nil
 			}
 
 			sMessage.Text = fmt.Sprintf("%s %s", s.settings.Reaction.DifficultySet, message.Message)
 		case minecraft.MessageTypeOther:
-			if s.settings.SendOption&SendSettingAll == 0 {
+			if !s.settings.SendOption.All {
 				return nil
 			}
 
@@ -235,48 +235,60 @@ func (s *SlackHandler) getMessage(ev *slackevents.MessageEvent) {
 		return
 	}
 
+	userSettings, err := GetUsersSettings()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, errors.Wrap(err, "GetUsersSettings").Error())
+		return
+	}
+
+	user := userSettings.GetUser(ev.User, ServiceTypeSlack)
+
 	var name = slackUser.Profile.DisplayName
 	if name == "" {
 		name = slackUser.RealName
 	}
 
-	var user User
 	user.Name = name
 
 	for _, text := range strings.Split(ev.Text, "\n") {
 		var command CommandContent
-		var msg = strings.Split(text, " ")
+		var msg = strings.Split(strings.TrimSpace(text), " ")
 
-		var permissions = GetPermissions(s.settings.Permissions)
+		var permissions = userSettings.GetPermissions(user.Groups)
 
-		var ok bool
+		hasPrefixSay, err := permissions.Verify(strings.TrimSpace(text))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, errors.Wrap(err, "Verify").Error())
+			return
+		}
 
 		// check the message has prefix: "say"
 		// if there is the prefix, not escape "@" to "at_"
-		var hasPrefixSay = true
-
-		command.Command, ok = permissions[msg[0]]
-		if !ok {
-			_, ok = permissions["say"]
-			if !ok || !s.settings.SendAllMessages {
+		if !hasPrefixSay {
+			ok, err := permissions.Verify("say")
+			if err != nil {
+				fmt.Fprintf(os.Stderr, errors.Wrap(err, "Verify").Error())
 				return
 			}
+			if !ok {
+				// nothing to do
+				return
+			}
+
+			// send as message
 			msg = append([]string{"say"}, msg...)
-			command.Command = "/say"
-			hasPrefixSay = false
 		}
 
-		// if server uses paperMC, commands do not contain "/""
-		if s.serverType == "paper" {
-			command.Command = strings.TrimPrefix(command.Command, "/")
+		command.Command = msg[0]
+
+		// vanilla needs slash to execute commands
+		switch s.serverType {
+		case "vanilla", "":
+			command.Command = "/" + msg[0]
 		}
 
 		if len(msg) < 2 {
 			return
-		}
-
-		if msg[1] == ";" {
-			msg = msg[:1]
 		}
 
 		switch command.Command {
@@ -293,27 +305,6 @@ func (s *SlackHandler) getMessage(ev *slackevents.MessageEvent) {
 			}
 
 			command.Options = fmt.Sprintf("[%s]%s", user.Name, command.Options)
-		case "/difficulty", "difficulty":
-			switch msg[1] {
-			case "p", "peaceful":
-				if s.settings.Difficulty&DifficultyPeaceful == 0 {
-					return
-				}
-			case "e", "easy":
-				if s.settings.Difficulty&DifficultyEasy == 0 {
-					return
-				}
-			case "n", "normal":
-				if s.settings.Difficulty&DifficultyNormal == 0 {
-					return
-				}
-			case "h", "hard":
-				if s.settings.Difficulty&DifficultyHard == 0 {
-					return
-				}
-			}
-
-			command.Options = msg[1]
 		default:
 			command.Options = strings.Join(msg[1:], " ")
 		}
