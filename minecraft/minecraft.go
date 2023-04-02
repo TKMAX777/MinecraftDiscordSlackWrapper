@@ -49,6 +49,8 @@ type Message struct {
 
 	// when Message type is Join / Left, User will have Join or Left user name
 	User string
+
+	IsSecure bool
 }
 
 // NewHandler makes new minecraft handler
@@ -89,7 +91,7 @@ func (m *Handler) sendMessages() chan Message {
 		return nil
 	}
 
-	var messageRegExp = regexp.MustCompile(`\]: <(\S+)> (.+)`)
+	var messageRegExp = regexp.MustCompile(`\]:\s(\[Not\sSecure\]\s)?<(\S+)> (.+)`)
 	var serverMessageRegExp = regexp.MustCompile(`\[Server\] (.+)`)
 
 	var joinedOrLeftRegExp = regexp.MustCompile(`\]: (\S+) (joined|left) (the game)$`)
@@ -149,9 +151,13 @@ func (m *Handler) sendMessages() chan Message {
 				message.Type = MessageTypeMessage
 
 				var submatch = messageRegExp.FindAllStringSubmatch(text, 1)[0]
-				message.User = submatch[1]
-				message.Message = submatch[2]
 
+				if submatch[1] == "" {
+					message.IsSecure = true
+				}
+
+				message.User = submatch[2]
+				message.Message = submatch[3]
 			case serverMessageRegExp.MatchString(text):
 				message.Type = MessageTypeServermessage
 				message.Message = infoTextRegExp.ReplaceAllString(text, `$1`)
