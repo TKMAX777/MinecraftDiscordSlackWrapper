@@ -141,11 +141,11 @@ func (m *Handler) sendMessages() chan Message {
 				}
 
 				var index = bytes.IndexByte(s, 0x6d)
-				if index < 0 || index >= len(s) {
+				if index < 0 {
 					convText = append(convText, s...)
-					continue
+				} else if index < len(s) {
+					convText = append(convText, s[index+1:]...)
 				}
-				convText = append(convText, s[index+1:]...)
 			}
 
 			var message Message
