@@ -2,6 +2,7 @@ package minecraft
 
 import (
 	"bufio"
+	"bytes"
 	"io"
 	"log"
 	"regexp"
@@ -120,7 +121,7 @@ func (m *Handler) sendMessages() chan Message {
 		defer m.stdout.Close()
 
 		for {
-			text, err := rdr.ReadString('\n')
+			rawtext, err := rdr.ReadBytes('\n')
 			if err == io.EOF {
 				return
 			} else if err != nil {
@@ -130,8 +131,25 @@ func (m *Handler) sendMessages() chan Message {
 				log.Printf("ErrorAtReadOutput: %s", err.Error())
 			}
 
+			// Remove color change escape sequences
+			var sep = bytes.Split(rawtext, []byte{0x1b, 0x5b})
+			var convText = []byte{}
+			for i, s := range sep {
+				if i == 0 {
+					convText = append(convText, s...)
+					continue
+				}
+
+				var index = bytes.IndexByte(s, 0x6d)
+				if index < 0 || index >= len(s) {
+					convText = append(convText, s...)
+					continue
+				}
+				convText = append(convText, s[index+1:]...)
+			}
+
 			var message Message
-			text = strings.TrimSpace(text)
+			var text = strings.TrimSpace(string(convText))
 
 			switch {
 			case joinedOrLeftRegExp.MatchString(text):
