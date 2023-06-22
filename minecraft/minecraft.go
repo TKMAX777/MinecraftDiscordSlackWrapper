@@ -131,7 +131,7 @@ func (m *Handler) sendMessages() chan Message {
 				log.Printf("ErrorAtReadOutput: %s", err.Error())
 			}
 
-			// Remove color change escape sequences
+			// Remove color change sequences
 			var sep = bytes.Split(rawtext, []byte{0x1b, 0x5b})
 			var convText = []byte{}
 			for i, s := range sep {
