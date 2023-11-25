@@ -153,6 +153,19 @@ func (d *DiscordHandler) SendMessageFunction() MessageSender {
 			}
 
 			dMessage.Content = message.Message
+		case minecraft.MessageTypeVillagerDeath:
+			if !(d.settings.SendOption.All || d.settings.SendOption.VillagerDeath) {
+				return nil
+			}
+
+			content := message.Content.(minecraft.MessageContentVillagerDeath)
+			dMessage.Content = fmt.Sprintf(
+				":%s: Villager: %s (ID: %d) died\n%s",
+				d.settings.Reaction.VillagerDeath,
+				content.Job,
+				content.ID,
+				content.DiedMessage,
+			)
 		case minecraft.MessageTypeDeath:
 			if !(d.settings.SendOption.All || d.settings.SendOption.Death) {
 				return nil

@@ -175,6 +175,19 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 			}
 
 			sMessage.Text = message.Message
+		case minecraft.MessageTypeVillagerDeath:
+			if !(s.settings.SendOption.All || s.settings.SendOption.VillagerDeath) {
+				return nil
+			}
+
+			content := message.Content.(minecraft.MessageContentVillagerDeath)
+			sMessage.Text = fmt.Sprintf(
+				":%s: Villager: %s (ID: %d) died\n%s",
+				s.settings.Reaction.VillagerDeath,
+				content.Job,
+				content.ID,
+				content.DiedMessage,
+			)
 		case minecraft.MessageTypeDeath:
 			if !(s.settings.SendOption.All || s.settings.SendOption.Death) {
 				return nil
