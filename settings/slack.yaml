@@ -12,6 +12,7 @@ Slack:
     ThreadINFO: false
     JoinLeft: true
     Death: true
+    VillagerDeath: true
     Message: true
     ReachedTheAdvancement: true
     DifficultySet: true
@@ -23,6 +24,7 @@ Slack:
       Join: revolving_hearts
       Left: wave
       Death: innocent
+      VillagerDeath: thunder_cloud_and_rain
       Advancement: party_parrot
       DifficultySet: white_check_mark
 

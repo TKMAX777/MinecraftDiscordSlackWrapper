@@ -36,6 +36,7 @@ const (
 	MessageTypeJoin MessageType = iota
 	MessageTypeLeft
 	MessageTypeDeath
+	MessageTypeVillagerDeath
 	MessageTypeMessage
 	MessageTypeServermessage
 	MessageTypeReachedTheAdvancement
@@ -52,6 +53,20 @@ type Message struct {
 	User string
 
 	IsSecure bool
+
+	Content interface{}
+}
+
+type MessageContentVillagerDeath struct {
+	Job         string
+	DiedMessage string
+	ID          int
+	UUID        string
+	L           string
+	X           float64
+	Y           float64
+	Z           float64
+	V           bool
 }
 
 // NewHandler makes new minecraft handler
@@ -179,6 +194,10 @@ func (m *Handler) sendMessages() chan Message {
 			case serverMessageRegExp.MatchString(text):
 				message.Type = MessageTypeServermessage
 				message.Message = infoTextRegExp.ReplaceAllString(text, `$1`)
+			case villagerDeathRegexp.Match(text):
+				message.Type = MessageTypeVillagerDeath
+				message.Message = infoTextRegExp.ReplaceAllString(text, `$1`)
+				message.Content = villagerDeathRegexp.Parse(text)
 			case death.Match(text):
 				message.Type = MessageTypeDeath
 				message.Message = infoTextRegExp.ReplaceAllString(text, `$1`)

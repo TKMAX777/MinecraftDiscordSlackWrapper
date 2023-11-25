@@ -12,6 +12,7 @@ Discord:
     ThreadINFO: false
     JoinLeft: true
     Death: false
+    VillagerDeath: false
     Message: false
     ReachedTheAdvancement: false
     DifficultySet: false
@@ -22,6 +23,7 @@ Discord:
       Join: revolving_hearts
       Left: wave
       Death: innocent
+      VillagerDeath: thunder_cloud_and_rain
       Advancement: party_parrot
       DifficultySet: white_check_mark
 

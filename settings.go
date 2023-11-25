@@ -22,6 +22,7 @@ type ReactionSetting struct {
 	Join          string `yaml:"Join"`
 	Left          string `yaml:"Left"`
 	Death         string `yaml:"Death"`
+	VillagerDeath string `yaml:"VillagerDeath"`
 	Advancement   string `yaml:"Advancement"`
 	DifficultySet string `yaml:"DifficultySet"`
 }
@@ -31,6 +32,7 @@ type SendSettings struct {
 	ThreadINFO            bool `yaml:"ThreadINFO"`
 	JoinLeft              bool `yaml:"JoinLeft"`
 	Death                 bool `yaml:"Death"`
+	VillagerDeath         bool `yaml:"VillagerDeath"`
 	Message               bool `yaml:"Message"`
 	ReachedTheAdvancement bool `yaml:"ReachedTheAdvancement"`
 	DifficultySet         bool `yaml:"DifficultySet"`
