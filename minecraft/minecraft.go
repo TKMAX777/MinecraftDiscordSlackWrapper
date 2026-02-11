@@ -23,11 +23,12 @@ type Handler struct {
 }
 
 type Setting struct {
-	ThreadInfoRegExp string   `yaml:"ThreadInfoRegExp"`
-	JAVA             string   `yaml:"JAVA"`
-	CustomBinaryPath string   `yaml:"CustomBinaryPath"`
-	ServerType       string   `yaml:"ServerType"`
-	Options          []string `yaml:"Options"`
+	ThreadInfoRegExp    string   `yaml:"ThreadInfoRegExp"`
+	JAVA                string   `yaml:"JAVA"`
+	CustomBinaryPath    string   `yaml:"CustomBinaryPath"`
+	CustomJarBinaryPath string   `yaml:"CustomJarBinaryPath"`
+	ServerType          string   `yaml:"ServerType"`
+	Options             []string `yaml:"Options"`
 }
 
 type MessageType int
@@ -78,12 +79,17 @@ func NewHandler(settings Setting) *Handler {
 func (m *Handler) Start() (chan Message, error) {
 	var opt = []string{}
 	if m.settings.CustomBinaryPath != "" {
-		err := m.process.Start(m.settings.CustomBinaryPath, opt...)
+		err := m.process.Start(m.settings.CustomBinaryPath, m.settings.Options...)
 		if err != nil {
 			return nil, errors.Wrap(err, "StartMinecraft")
 		}
 	} else {
-		opt = append(m.settings.Options, "-jar", "server.jar", "nogui")
+		var jarName = "server.jar"
+		if m.settings.CustomJarBinaryPath != "" {
+			jarName = m.settings.CustomJarBinaryPath
+		}
+
+		opt = append(m.settings.Options, "-jar", jarName, "nogui")
 		if m.settings.JAVA == "" {
 			m.settings.JAVA = "java"
 		}
