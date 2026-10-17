@@ -116,7 +116,7 @@ func (m *Handler) sendMessages() chan Message {
 	var messageRegExp = regexp.MustCompile(`\]:\s(\[Not\sSecure\]\s)?<(\S+)> (.+)`)
 	var serverMessageRegExp = regexp.MustCompile(`\[Server\] (.+)`)
 
-	var joinedOrLeftRegExp = regexp.MustCompile(`\]: (\S+) (joined|left) (the game)$`)
+	var joinedOrLeftRegExp = regexp.MustCompile(`\]: (System chat: )?(\S+) (\(formerly known as \S+\) )?(joined|left) (the game)$`)
 	var reachedTheGoalRegExp = regexp.MustCompile(`\S+ has reached the goal`)
 	var madeTheAdvRegExp = regexp.MustCompile(`\S+ has made the advancement`)
 	var difficultySetRegExp = regexp.MustCompile(`The difficulty has been set to (\S+)`)
@@ -174,14 +174,14 @@ func (m *Handler) sendMessages() chan Message {
 
 			switch {
 			case joinedOrLeftRegExp.MatchString(text):
-				switch joinedOrLeftRegExp.FindStringSubmatch(text)[2] {
+				switch joinedOrLeftRegExp.FindStringSubmatch(text)[4] {
 				case "joined":
 					message.Type = MessageTypeJoin
 				case "left":
 					message.Type = MessageTypeLeft
 				}
 
-				message.User = joinedOrLeftRegExp.FindStringSubmatch(text)[1]
+				message.User = joinedOrLeftRegExp.FindStringSubmatch(text)[2]
 				message.Message = joinedOrLeftRegExp.ReplaceAllString(text, "$1 $2 $3")
 			case reachedTheGoalRegExp.MatchString(text) || madeTheAdvRegExp.MatchString(text):
 				message.Type = MessageTypeReachedTheAdvancement
