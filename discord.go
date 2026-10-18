@@ -318,11 +318,15 @@ func (d *DiscordHandler) getMessage(s *discordgo.Session, m *discordgo.MessageCr
 }
 
 func (d *DiscordHandler) sendUserState(event minecraft.MessageType) error {
-	return d.RefreshUserState()
+	return d.updateUserState(event == minecraft.MessageTypeJoin || event == minecraft.MessageTypeLeft)
 }
 
 // RefreshUserState edits the existing roster so minute updates do not post new messages.
 func (d *DiscordHandler) RefreshUserState() error {
+	return d.updateUserState(false)
+}
+
+func (d *DiscordHandler) updateUserState(repost bool) error {
 	d.stateMu.Lock()
 	defer d.stateMu.Unlock()
 	if d.closed || !d.settings.SendJoinStateMessage {
@@ -358,7 +362,8 @@ func (d *DiscordHandler) RefreshUserState() error {
 			UserName:  d.settings.UserName,
 			AvaterURL: d.settings.AvaterURI,
 		}
-		if d.lastMessageID == "" {
+		previousID := d.lastMessageID
+		if d.lastMessageID == "" || repost {
 			message, err = d.webhook.Send(d.settings.ChannelID, *message, true, dFiles)
 		} else {
 			message, err = d.webhook.Edit(d.settings.ChannelID, d.lastMessageID, *message, dFiles)
@@ -377,6 +382,9 @@ func (d *DiscordHandler) RefreshUserState() error {
 			return errors.New("SendUserState: missing message ID")
 		}
 		d.lastMessageID = message.ID
+		if repost && previousID != "" && previousID != message.ID {
+			return d.webhook.Delete(d.settings.ChannelID, previousID)
+		}
 	}
 
 	return nil

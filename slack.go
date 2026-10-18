@@ -383,11 +383,15 @@ func (s *SlackHandler) escapeMessage(content string) (output string, err error) 
 }
 
 func (s *SlackHandler) sendUserState(event minecraft.MessageType) error {
-	return s.RefreshUserState()
+	return s.updateUserState(event == minecraft.MessageTypeJoin || event == minecraft.MessageTypeLeft)
 }
 
 // RefreshUserState updates the existing Slack roster without reposting it.
 func (s *SlackHandler) RefreshUserState() error {
+	return s.updateUserState(false)
+}
+
+func (s *SlackHandler) updateUserState(repost bool) error {
 	if !s.settings.SendJoinStateMessage {
 		return nil
 	}
@@ -433,6 +437,10 @@ func (s *SlackHandler) RefreshUserState() error {
 	}
 	var ts string
 	var err error
+	previousTS := s.lastMessageTS
+	if repost {
+		message.TS = ""
+	}
 	if message.TS == "" {
 		ts, err = s.webhook.Send(message)
 	} else {
@@ -451,6 +459,13 @@ func (s *SlackHandler) RefreshUserState() error {
 		return errors.New("RefreshSlackUserState: missing message timestamp")
 	}
 	s.lastMessageTS = ts
+	if repost && previousTS != "" && previousTS != ts {
+		_, err := s.webhook.Remove(s.settings.ChannelID, previousTS)
+		var apiErr *slack_webhook.APIError
+		if err != nil && !(errors.As(err, &apiErr) && apiErr.Code == "message_not_found") {
+			return err
+		}
+	}
 	return nil
 }
 
