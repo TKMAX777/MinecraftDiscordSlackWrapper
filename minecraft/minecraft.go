@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"io"
 	"log"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -87,6 +88,9 @@ func (m *Handler) Start() (chan Message, error) {
 		var jarName = "server.jar"
 		if m.settings.CustomJarBinaryPath != "" {
 			jarName = m.settings.CustomJarBinaryPath
+		}
+		if filepath.IsAbs(jarName) {
+			m.process.WorkingDirectory = filepath.Dir(jarName)
 		}
 
 		opt = append(m.settings.Options, "-jar", jarName, "nogui")

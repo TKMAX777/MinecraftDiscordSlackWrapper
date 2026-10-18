@@ -5,9 +5,11 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
+	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/mcheads"
 	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/minecraft"
 	"github.com/pkg/errors"
 )
@@ -16,13 +18,20 @@ import (
 const NameDictPath = "name_dict.json"
 
 func main() {
+	executable, err := os.Executable()
+	if err != nil {
+		log.Println(errors.Wrap(err, "LocateExecutable"))
+		return
+	}
 	var settings *Setting
 
-	settings, err := ReadSettings()
+	settings, err = ReadSettings()
 	if err != nil {
 		log.Println(errors.Wrap(err, "ReadSettings"))
 		return
 	}
+	settings.Minecraft.CustomJarBinaryPath = minecraft.ResolveServerJarPath(settings.Minecraft.CustomJarBinaryPath, filepath.Dir(executable))
+	mcheads.SetServerDirectory(filepath.Dir(settings.Minecraft.CustomJarBinaryPath))
 
 	fmt.Printf("%+v\n", settings)
 
@@ -156,6 +165,9 @@ func relayMinecraftMessages(messages <-chan minecraft.Message, ticks <-chan time
 		case message, ok := <-messages:
 			if !ok {
 				return
+			}
+			if message.Type == minecraft.MessageTypeThreadINFO || message.Type == minecraft.MessageTypeOther {
+				mcheads.ObserveServerMessage(message.Message)
 			}
 			switch message.Type {
 			case minecraft.MessageTypeJoin:

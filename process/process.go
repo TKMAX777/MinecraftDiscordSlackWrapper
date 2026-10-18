@@ -9,8 +9,9 @@ import (
 
 // Process handles process controls
 type Process struct {
-	cmd  *exec.Cmd
-	pipe pipe
+	WorkingDirectory string
+	cmd              *exec.Cmd
+	pipe             pipe
 }
 
 // Pipes returns stdin / stdout / stderr pipes
@@ -42,6 +43,7 @@ func (p *Process) Start(name string, arg ...string) error {
 	}
 
 	p.cmd = exec.Command(name, arg...)
+	p.cmd.Dir = p.WorkingDirectory
 
 	stdout, err := p.cmd.StdoutPipe()
 	if err != nil {

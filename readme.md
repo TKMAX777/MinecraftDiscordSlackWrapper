@@ -46,6 +46,12 @@ DiscordやSlackにMinecraftの出力内容を垂れ流すプログラム。つ�
 ### 設定ファイル
 
 - `settings`以下のファイルを編集することで、設定が変更できます。
+- `Minecraft.CustomJarBinaryPath` の相対パスはWrapperのバイナリがあるディレクトリを基準に解決します。未指定の場合のみ `server.jar` を使います。Javaサーバーの作業ディレクトリもjarのある場所に合わせます。
+
+### Geyser / Floodgateのアイコン
+設定したjarと同じディレクトリの `usercache.json`、またはサーバーのUUIDログからプレイヤーを識別します。FloodgateのUUIDからXUIDを取得し、Geyserの公開APIに登録された変換済みスキンを使用します。Slack・Discordの会話アイコンとログイン一覧の両方に適用されます。
+
+Javaアカウントとリンクされている場合は、サーバーが記録したJava UUIDのプロフィールを使用します。Geyser側にまだスキンが登録されていない場合は取得できないため、後続の更新で再試行します。サーバーの設定・キャッシュファイルを書き換えることはありません。
 
 ## 参考 - SendJoinStateMessages -
 

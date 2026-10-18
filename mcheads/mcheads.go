@@ -75,11 +75,19 @@ func fetchSkinURL(identifier string) (string, error) {
 	uuid := identifier
 	if len(strings.ReplaceAll(uuid, "-", "")) != 32 {
 		var err error
-		uuid, err = minecraft.GetUUID(identifier)
+		uuid, err = localPlayerUUID(identifier)
+		// A missing/partially written server cache must not break ordinary Java names.
+		if err != nil || uuid == "" {
+			uuid, err = minecraft.GetUUID(identifier)
+		}
 		if err != nil {
 			return "", err
 		}
 	}
+	if xuid, ok := floodgateXUID(uuid); ok {
+		return bedrockSkinURL(xuid)
+	}
+	uuid = strings.ReplaceAll(uuid, "-", "")
 	profile, err := minecraft.GetProfile(uuid)
 	if err != nil {
 		return "", err
