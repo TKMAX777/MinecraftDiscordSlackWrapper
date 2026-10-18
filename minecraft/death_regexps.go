@@ -1,5 +1,7 @@
 package minecraft
 
+// Legacy death messages and Minecraft Java 26.3 patterns.
+// The 26.3 patterns come from assets/minecraft/lang/en_us.json in the official client.
 const deathRegexps = `
 \S+ was shot by \S+
 \S+ was shot by \S+ using \S+
@@ -97,10 +99,7 @@ const deathRegexps = `
 \S+ got finished off by \S+
 \S+ got finished off by \S+ using \S+
 \S+ got finished off using \S+
-\S+ fell off a ladder
-\S+ fell off some vines
 \S+ fell out of the water
-\S+ fell from a high place
 \S+ was shot off a ladder
 \S+ was shot off some vines
 \S+ was shot out of the water
@@ -450,81 +449,113 @@ const deathRegexps = `
 \S+ was knocked out of the water by \S+ and got finished off using \S+
 \S+ was knocked from a high place by \S+ and got finished off using \S+
 \S+ was slain by Arrow
-\S+ was shot by \S+
-\S+ was pricked to death
-\S+ drowned
-\S+ experienced kinetic energy
-\S+ blew up
 \S+ was blown up by Block of TNT
-\S+ was blown up by \S+
-\S+ hit the ground too hard
-\S+ fell from a high place
-\S+ was squashed by a falling anvil
-\S+ was squashed by a falling block
-\S+ went up in flames
-\S+ burned to death
-\S+ went off with a bang
-\S+ tried to swim in lava
-\S+ was struck by lightning
 \S+ discovered floor was lava
-\S+ was killed by magic
-\S+ was killed by \S+ using magic
-\S+ was slain by \S+
 \S+ was slain by Small Fireball
-\S+ starved to death
-\S+ suffocated in a wall
-\S+ was killed trying to hurt \S+
 \S+ was impaled to death by \S+
-\S+ fell out of the world
-\S+ withered away
-\S+ died
-\S+ was fireballed by \S+
 \S+ was sniped by \S+
 \S+ was spitballed by \S+
-\S+ froze to death
-\S+ was skewered by a falling stalactite
-\S+ was impaled on a stalagmite
-\S+ was shot by \S+ using \S+
-\S+ walked into a cactus whilst trying to escape \S+
-\S+ drowned whilst trying to escape \S+
-\S+ was fireballed by \S+ using \S+
-\S+ was killed by \S+ using \S+
-\S+ walked into fire whilst fighting \S+
-\S+ tried to swim in lava to escape \S+
 \S+ walked on danger zone due to \S+
-\S+ was burnt to a crisp whilst fighting \S+
-\S+ was slain by \S+ using \S+
-\S+ was pummeled by \S+
-\S+ was pummeled by \S+ using \S+
-\S+ fell off a ladder
-\S+ fell off some vines
-\S+ fell out of the water
-\S+ was doomed to fall
-\S+ was doomed to fall by \S+
-\S+ was doomed to fall by \S+ using \S+
-\S+ fell too far and was finished by \S+
-\S+ fell too far and was finished by \S+ using \S+
-\S+ went up in flames
-\S+ burned to death
-\S+ tried to swim in lava
-\S+ suffocated in a wall
-\S+ drowned
-\S+ starved to death
-\S+ was pricked to death
-\S+ hit the ground too hard
-\S+ fell out of the world
-\S+ died
-\S+ blew up
-\S+ was killed by magic
-\S+ was slain by \S+
-\S+ was slain by \S+
-\S+ was shot by \S+
-\S+ was fireballed by \S+
-\S+ was pummeled by \S+
-\S+ walked into fire whilst fighting \S+
-\S+ was burnt to a crisp whilst fighting \S+
-\S+ tried to swim in lava to escape \S+
-\S+ drowned whilst trying to escape \S+
-\S+ walked into a cactus whilst trying to escape \S+
-\S+ was blown up by \S+
+.+ was squashed by a falling anvil
+.+ was squashed by a falling anvil while fighting .+
+.+ was shot by .+
+.+ was shot by .+ using .+
+.+ was killed by .+
+.+ was pricked to death
+.+ walked into a cactus while trying to escape .+
+.+ was squished too much
+.+ was squashed by .+
+.+ was roasted in dragon's breath
+.+ was roasted in dragon's breath by .+
+.+ drowned
+.+ drowned while trying to escape .+
+.+ died from dehydration
+.+ died from dehydration while trying to escape .+
+.+ was killed by even more magic
+.+ blew up
+.+ was blown up by .+
+.+ was blown up by .+ using .+
+.+ hit the ground too hard
+.+ hit the ground too hard while trying to escape .+
+.+ was squashed by a falling block
+.+ was squashed by a falling block while fighting .+
+.+ was skewered by a falling stalactite
+.+ was skewered by a falling stalactite while fighting .+
+.+ was fireballed by .+
+.+ was fireballed by .+ using .+
+.+ went off with a bang
+.+ went off with a bang due to a firework fired from .+ by .+
+.+ went off with a bang while fighting .+
+.+ experienced kinetic energy
+.+ experienced kinetic energy while trying to escape .+
+.+ froze to death
+.+ was frozen to death by .+
+.+ died
+.+ died because of .+
+.+ was killed
+.+ was killed while fighting .+
+.+ discovered the floor was lava
+.+ walked into the danger zone due to .+
+.+ was killed by .+ using magic
+.+ was killed by .+ using .+
+.+ went up in flames
+.+ walked into fire while fighting .+
+.+ suffocated in a wall
+.+ suffocated in a wall while fighting .+
+.+ tried to swim in lava
+.+ tried to swim in lava to escape .+
+.+ was struck by lightning
+.+ was struck by lightning while fighting .+
+.+ was smashed by .+
+.+ was smashed by .+ with .+
+.+ was killed by magic
+.+ was killed by magic while trying to escape .+
+.+ was slain by .+
+.+ was slain by .+ using .+
+.+ burned to death
+.+ was burned to a crisp while fighting .+ wielding .+
+.+ was burned to a crisp while fighting .+
+.+ fell out of the world
+.+ didn't want to live in the same world as .+
+.+ left the confines of this world
+.+ left the confines of this world while fighting .+
+.+ was obliterated by a sonically-charged shriek
+.+ was obliterated by a sonically-charged shriek while trying to escape .+ wielding .+
+.+ was obliterated by a sonically-charged shriek while trying to escape .+
+.+ was speared by .+
+.+ was speared by .+ using .+
+.+ was impaled on a stalagmite
+.+ was impaled on a stalagmite while fighting .+
+.+ starved to death
+.+ starved to death while fighting .+
+.+ was stung to death
+.+ was stung to death by .+ using .+
+.+ was stung to death by .+
+.+ died because not just the floor is lava
+.+ showed .+ that not just the floor is lava using .+
+.+ showed .+ that not just the floor is lava
+.+ was poked to death by a sweet berry bush
+.+ was poked to death by a sweet berry bush while trying to escape .+
+.+ was killed while trying to hurt .+
+.+ was killed by .+ while trying to hurt .+
+.+ was pummeled by .+
+.+ was pummeled by .+ using .+
+.+ was impaled by .+
+.+ was impaled by .+ with .+
+.+ withered away
+.+ withered away while fighting .+
+.+ was shot by a skull from .+
+.+ was shot by a skull from .+ using .+
+.+ fell from a high place
+.+ fell off a ladder
+.+ fell while climbing
+.+ fell off scaffolding
+.+ fell off some twisting vines
+.+ fell off some vines
+.+ fell off some weeping vines
+.+ was doomed to fall by .+
+.+ was doomed to fall by .+ using .+
+.+ fell too far and was finished by .+
+.+ fell too far and was finished by .+ using .+
+.+ was doomed to fall
 `

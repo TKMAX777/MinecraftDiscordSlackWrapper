@@ -115,10 +115,10 @@ func (m *Handler) sendMessages() chan Message {
 
 	var messageRegExp = regexp.MustCompile(`\]:\s(\[Not\sSecure\]\s)?<(\S+)> (.+)`)
 	var serverMessageRegExp = regexp.MustCompile(`\[Server\] (.+)`)
+	var systemChatRegExp = regexp.MustCompile(`(?i)^system\s*chat:\s*`)
 
-	var joinedOrLeftRegExp = regexp.MustCompile(`\]: (System chat: )?(\S+) (\(formerly known as \S+\) )?(joined|left) (the game)$`)
-	var reachedTheGoalRegExp = regexp.MustCompile(`\S+ has reached the goal`)
-	var madeTheAdvRegExp = regexp.MustCompile(`\S+ has made the advancement`)
+	var joinedOrLeftRegExp = regexp.MustCompile(`^(\S+) (\(formerly known as \S+\) )?(joined|left) the game$`)
+	var advancementRegExp = regexp.MustCompile(`^(\S+) has (reached the goal|made the advancement|completed the challenge) \[.+\]$`)
 	var difficultySetRegExp = regexp.MustCompile(`The difficulty has been set to (\S+)`)
 	var difficultyNotSetRegExp = regexp.MustCompile(`The difficulty did not change; it is already set to (\S+)`)
 
@@ -140,6 +140,7 @@ func (m *Handler) sendMessages() chan Message {
 
 	go func() {
 		defer m.stdout.Close()
+		defer close(cMessage)
 
 		for {
 			rawtext, err := rdr.ReadBytes('\n')
@@ -171,21 +172,30 @@ func (m *Handler) sendMessages() chan Message {
 
 			var message Message
 			var text = strings.TrimSpace(string(convText))
+			// Strip the logger and system-chat envelope before classifying events.
+			// Only remove a leading envelope, preserving those words in player chat.
+			var isInfo = infoTextRegExp.MatchString(text)
+			var body = infoTextRegExp.ReplaceAllString(text, `$1`)
+			body = strings.TrimSpace(body)
+			for systemChatRegExp.MatchString(body) {
+				body = systemChatRegExp.ReplaceAllString(body, "")
+			}
 
 			switch {
-			case joinedOrLeftRegExp.MatchString(text):
-				switch joinedOrLeftRegExp.FindStringSubmatch(text)[4] {
+			case isInfo && joinedOrLeftRegExp.MatchString(body):
+				switch joinedOrLeftRegExp.FindStringSubmatch(body)[3] {
 				case "joined":
 					message.Type = MessageTypeJoin
 				case "left":
 					message.Type = MessageTypeLeft
 				}
 
-				message.User = joinedOrLeftRegExp.FindStringSubmatch(text)[2]
-				message.Message = joinedOrLeftRegExp.ReplaceAllString(text, "$1 $2 $3")
-			case reachedTheGoalRegExp.MatchString(text) || madeTheAdvRegExp.MatchString(text):
+				message.User = joinedOrLeftRegExp.FindStringSubmatch(body)[1]
+				message.Message = body
+			case isInfo && advancementRegExp.MatchString(body):
 				message.Type = MessageTypeReachedTheAdvancement
-				message.Message = infoTextRegExp.ReplaceAllString(text, `$1`)
+				message.User = advancementRegExp.FindStringSubmatch(body)[1]
+				message.Message = body
 			case messageRegExp.MatchString(text):
 				message.Type = MessageTypeMessage
 
@@ -199,20 +209,20 @@ func (m *Handler) sendMessages() chan Message {
 				message.Message = submatch[3]
 			case serverMessageRegExp.MatchString(text):
 				message.Type = MessageTypeServermessage
-				message.Message = infoTextRegExp.ReplaceAllString(text, `$1`)
+				message.Message = body
 			case villagerDeathRegexp.Match(text):
 				message.Type = MessageTypeVillagerDeath
-				message.Message = infoTextRegExp.ReplaceAllString(text, `$1`)
+				message.Message = body
 				message.Content = villagerDeathRegexp.Parse(text)
-			case death.Match(text):
+			case isInfo && death.Match(body):
 				message.Type = MessageTypeDeath
-				message.Message = infoTextRegExp.ReplaceAllString(text, `$1`)
+				message.Message = body
 			case difficultyNotSetRegExp.MatchString(text) || difficultySetRegExp.MatchString(text):
 				message.Type = MessageTypeDifficultySet
-				message.Message = infoTextRegExp.ReplaceAllString(text, `$1`)
+				message.Message = body
 			case infoTextRegExp.MatchString(text):
 				message.Type = MessageTypeThreadINFO
-				message.Message = infoTextRegExp.ReplaceAllString(text, `$1`)
+				message.Message = body
 			default:
 				message.Type = MessageTypeOther
 				message.Message = text

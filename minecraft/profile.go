@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -43,12 +44,17 @@ type MetaData struct {
 const MojangAPIendpoint = "https://api.mojang.com"
 const MojangSessionAPIendpoint = "https://sessionserver.mojang.com"
 
+var profileHTTPClient = &http.Client{Timeout: 15 * time.Second}
+
 func GetUUID(username string) (string, error) {
-	resp, err := http.Get(MojangAPIendpoint + "/users/profiles/minecraft/" + username)
+	resp, err := profileHTTPClient.Get(MojangAPIendpoint + "/users/profiles/minecraft/" + username)
 	if err != nil {
 		return "", errors.Wrap(err, "Get")
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.Errorf("GetUUID: HTTP %d for %s", resp.StatusCode, username)
+	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -66,15 +72,21 @@ func GetUUID(username string) (string, error) {
 		return "", errors.Wrapf(err, "UnmarshalBody: %s", body)
 	}
 
+	if responseAttr.ID == "" {
+		return "", errors.New("GetUUID: missing profile ID")
+	}
 	return responseAttr.ID, nil
 }
 
 func GetProfile(uuid string) (*Profile, error) {
-	resp, err := http.Get(MojangSessionAPIendpoint + "/session/minecraft/profile/" + uuid)
+	resp, err := profileHTTPClient.Get(MojangSessionAPIendpoint + "/session/minecraft/profile/" + uuid)
 	if err != nil {
 		return nil, errors.Wrap(err, "Get")
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("GetProfile: HTTP %d", resp.StatusCode)
+	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -92,8 +104,9 @@ func GetProfile(uuid string) (*Profile, error) {
 }
 
 func (p *Profile) UnmarshalJSON(b []byte) error {
+	type profileFields Profile
 	type responseAttrType struct {
-		*Profile
+		*profileFields
 		Properties []struct {
 			Name  string `json:"name"`
 			Value string `json:"value"`
@@ -101,7 +114,7 @@ func (p *Profile) UnmarshalJSON(b []byte) error {
 	}
 
 	var responseAttr responseAttrType
-	responseAttr.Profile = p
+	responseAttr.profileFields = (*profileFields)(p)
 
 	err := json.Unmarshal(b, &responseAttr)
 	if err != nil {
@@ -113,7 +126,10 @@ func (p *Profile) UnmarshalJSON(b []byte) error {
 	for _, value := range responseAttr.Properties {
 		switch value.Name {
 		case "textures":
-			b, err := base64.RawStdEncoding.DecodeString(value.Value)
+			b, err := base64.StdEncoding.DecodeString(value.Value)
+			if err != nil {
+				b, err = base64.RawStdEncoding.DecodeString(value.Value)
+			}
 			if err != nil {
 				return errors.Wrap(err, "TexturesBase64Decode")
 			}

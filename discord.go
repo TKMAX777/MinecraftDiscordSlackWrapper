@@ -4,28 +4,22 @@ import (
 	"bytes"
 	"fmt"
 	"image"
-	"image/color"
 	"image/png"
 	"io"
 	"log"
-	"math"
+	"net/http"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
-
-	"golang.org/x/image/draw"
+	"sync"
+	"time"
 
 	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/discord_webhook"
 	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/mcheads"
 	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/minecraft"
 	"github.com/bwmarrin/discordgo"
-	"github.com/golang/freetype/truetype"
-	"github.com/nfnt/resize"
-
 	"github.com/pkg/errors"
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/gofont/gomono"
-	"golang.org/x/image/math/fixed"
 )
 
 // DiscordHandler handles Discord conversations
@@ -41,8 +35,16 @@ type DiscordHandler struct {
 	joinState  *JoinState
 
 	lastMessageID string
+	stateMu       sync.Mutex
+	closed        bool
+	avatars       map[string]cachedStateAvatar
 
 	settings DiscordSetting
+}
+
+type cachedStateAvatar struct {
+	joinedAt time.Time
+	head     image.Image
 }
 
 func NewDiscordHandler(settings DiscordSetting, joinState *JoinState) *DiscordHandler {
@@ -62,6 +64,9 @@ func NewDiscordHandler(settings DiscordSetting, joinState *JoinState) *DiscordHa
 }
 
 func (d *DiscordHandler) Close() error {
+	d.stateMu.Lock()
+	defer d.stateMu.Unlock()
+	d.closed = true
 	if d.session != nil {
 		d.session.Close()
 	}
@@ -183,7 +188,11 @@ func (d *DiscordHandler) SendMessageFunction() MessageSender {
 				return nil
 			}
 			dMessage.UserName = message.User
-			dMessage.AvaterURL = mcheads.GetAvaterURI(message.User)
+			if avatarURI, err := mcheads.GetCurrentAvaterURI(message.User); err == nil {
+				dMessage.AvaterURL = avatarURI
+			} else {
+				log.Printf("Discord chat avatar for %s: %v", message.User, err)
+			}
 			dMessage.Content = message.Message
 		case minecraft.MessageTypeServermessage:
 			if !(d.settings.SendOption.All || d.settings.SendOption.Message) {
@@ -309,20 +318,29 @@ func (d *DiscordHandler) getMessage(s *discordgo.Session, m *discordgo.MessageCr
 }
 
 func (d *DiscordHandler) sendUserState(event minecraft.MessageType) error {
+	return d.RefreshUserState()
+}
+
+// RefreshUserState edits the existing roster so minute updates do not post new messages.
+func (d *DiscordHandler) RefreshUserState() error {
+	d.stateMu.Lock()
+	defer d.stateMu.Unlock()
+	if d.closed || !d.settings.SendJoinStateMessage {
+		return nil
+	}
 	const LogonPngName = "Logon Users.png"
 
 	var dFiles []discord_webhook.File
 
-	if d.lastMessageID != "" {
-		var err = d.webhook.Delete(d.settings.ChannelID, d.lastMessageID)
-		if err != nil {
-			log.Printf("sendUserState: Delete: %s\n", err.Error())
-		}
-	}
-
-	switch len(d.joinState.State) {
+	switch len(d.joinState.Snapshot()) {
 	case 0:
+		if d.lastMessageID != "" {
+			if err := d.webhook.Delete(d.settings.ChannelID, d.lastMessageID); err != nil {
+				return err
+			}
+		}
 		d.lastMessageID = ""
+		d.avatars = nil
 	default:
 		r, err := d.makeUserStateImage()
 		if err != nil {
@@ -340,160 +358,91 @@ func (d *DiscordHandler) sendUserState(event minecraft.MessageType) error {
 			UserName:  d.settings.UserName,
 			AvaterURL: d.settings.AvaterURI,
 		}
-		message, err = d.webhook.Send(d.settings.ChannelID, *message, true, dFiles)
+		if d.lastMessageID == "" {
+			message, err = d.webhook.Send(d.settings.ChannelID, *message, true, dFiles)
+		} else {
+			message, err = d.webhook.Edit(d.settings.ChannelID, d.lastMessageID, *message, dFiles)
+			var apiErr *discord_webhook.HTTPError
+			if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound {
+				// The roster may have been manually deleted; recreate it once.
+				d.lastMessageID = ""
+				return d.refreshDeletedUserState()
+			}
+		}
 		if err != nil {
 			return errors.Wrap(err, "Send")
 		}
 
+		if message.ID == "" {
+			return errors.New("SendUserState: missing message ID")
+		}
 		d.lastMessageID = message.ID
 	}
 
 	return nil
 }
 
-func (d *DiscordHandler) makeUserStateImage() (r io.Reader, err error) {
-	const UserNameSize = 30
-	const imageHeight = 40
-	const imageWidth = 800
-
-	const imageMarginSide = 5
-	const imageMarginLine = 5
-	const userMargin = 5
-
-	const HeadSize = imageHeight - imageMarginLine
-
-	ft, err := truetype.Parse(gomono.TTF)
+// stateMu is already held by RefreshUserState.
+func (d *DiscordHandler) refreshDeletedUserState() error {
+	r, err := d.makeUserStateImage()
 	if err != nil {
-		return nil, errors.Wrap(err, "FontParseError")
+		return err
 	}
-
-	var laneFrames = make([]*image.RGBA, 0)
-	var frame = image.NewRGBA(image.Rect(0, 0, imageWidth, imageHeight))
-
-	var X = imageMarginSide
-	for username := range d.joinState.State {
-		r, err := mcheads.GetAvater(username)
-		if err != nil {
-			log.Println("makeUserStateImage: GetAvater: ", err.Error())
-			continue
-		}
-
-		headImage, _, err := image.Decode(r)
-		if err != nil {
-			log.Println("makeUserStateImage: Decode: ", err.Error())
-			continue
-		}
-
-		headImage = d.resize(headImage, HeadSize)
-
-		var errConunt int
-	again:
-		var dr = &font.Drawer{
-			Dst: frame,
-			Src: image.Black,
-			Face: truetype.NewFace(
-				ft,
-				&truetype.Options{
-					Size: UserNameSize,
-				},
-			),
-			Dot: fixed.Point26_6{},
-		}
-
-		// Confirm that the width occupied by the user does not exceed the image size.
-		if imageWidth < X+headImage.Bounds().Dx()+dr.MeasureString(username).Ceil()+imageMarginSide-userMargin {
-			laneFrames = append(laneFrames, frame)
-			frame = image.NewRGBA(image.Rect(0, 0, imageWidth, imageHeight*2))
-
-			if errConunt > 1 {
-				log.Println("INFO: makeUserStateImage: UserName too long:", username)
-				continue
-			}
-
-			errConunt++
-			X = imageMarginSide
-
-			goto again
-		}
-
-		var imgPoint = image.Point{X, imageMarginLine}
-		draw.Copy(frame, imgPoint, headImage, headImage.Bounds(), draw.Over, nil)
-
-		dr.Dot.X = fixed.I(headImage.Bounds().Dx() + userMargin + X)
-		dr.Dot.Y = fixed.I(imageHeight)
-
-		dr.DrawString(username)
-
-		X += X + headImage.Bounds().Dx() + dr.MeasureString(username).Ceil() + userMargin
-	}
-
-	laneFrames = append(laneFrames, frame)
-	frame = image.NewRGBA(image.Rect(0, 0, imageWidth, imageHeight*(len(laneFrames)+1)+imageMarginLine))
-	frame = d.fillFrame(frame, color.White)
-
-	var dr = &font.Drawer{
-		Dst: frame,
-		Src: image.Black,
-		Face: truetype.NewFace(
-			ft,
-			&truetype.Options{
-				Size: UserNameSize,
-			},
-		),
-		Dot: fixed.Point26_6{},
-	}
-
-	dr.Dot.X = fixed.I(imageMarginSide)
-	dr.Dot.Y = fixed.I(imageHeight)
-
-	dr.DrawString("<Logon Users>")
-
-	for i := range laneFrames {
-		var imgPoint = image.Point{0, imageHeight * (i + 1)}
-		draw.Copy(frame, imgPoint, laneFrames[i], laneFrames[i].Bounds(), draw.Over, nil)
-	}
-
-	var encodePNG = new(bytes.Buffer)
-	err = png.Encode(encodePNG, frame)
+	message, err := d.webhook.Send(d.settings.ChannelID, discord_webhook.Message{
+		UserName: d.settings.UserName, AvaterURL: d.settings.AvaterURI,
+	}, true, []discord_webhook.File{{FileName: "Logon Users.png", Reader: r, ContentType: "image/png"}})
 	if err != nil {
-		return nil, errors.Wrap(err, "Encode")
+		return err
 	}
-
-	return encodePNG, nil
+	if message.ID == "" {
+		return errors.New("SendUserState: missing message ID")
+	}
+	d.lastMessageID = message.ID
+	return nil
 }
 
-func (d DiscordHandler) fillFrame(frame *image.RGBA, c color.Color) *image.RGBA {
-	var rect = frame.Rect
-	var newFrame = &image.RGBA{}
-
-	*newFrame = *frame
-
-	for h := rect.Min.Y; h < rect.Max.Y; h++ {
-		for v := rect.Min.X; v < rect.Max.X; v++ {
-			newFrame.Set(v, h, c)
+func (d *DiscordHandler) makeUserStateImage() (io.Reader, error) {
+	state := d.joinState.Snapshot()
+	names := make([]string, 0, len(state))
+	for name := range state {
+		names = append(names, name)
+	}
+	if d.avatars == nil {
+		d.avatars = make(map[string]cachedStateAvatar)
+	}
+	for name := range d.avatars {
+		if _, online := state[name]; !online {
+			delete(d.avatars, name)
 		}
 	}
-
-	return newFrame
-}
-
-func (d DiscordHandler) resize(srcImage image.Image, MaxSize int) *image.RGBA {
-	// resize png, jpg
-	var width, height = float64(srcImage.Bounds().Size().X), float64(srcImage.Bounds().Size().Y)
-
-	var ratio float64
-	if width > height {
-		ratio = float64(MaxSize) / width
-	} else {
-		ratio = float64(MaxSize) / height
+	sort.Strings(names)
+	players := make([]userStatePlayer, 0, len(names))
+	for _, name := range names {
+		player := userStatePlayer{Name: name, JoinedAt: state[name].JoinedAt}
+		if cached, ok := d.avatars[name]; ok && cached.joinedAt.Equal(player.JoinedAt) {
+			player.Head = cached.head
+			players = append(players, player)
+			continue
+		}
+		r, err := mcheads.GetAvater(name)
+		if err == nil {
+			player.Head, _, err = image.Decode(r)
+			r.Close()
+		}
+		if err != nil {
+			log.Printf("makeUserStateImage: %s: %s", name, err)
+		} else {
+			d.avatars[name] = cachedStateAvatar{joinedAt: player.JoinedAt, head: player.Head}
+		}
+		players = append(players, player)
 	}
-	srcImage = resize.Resize(
-		uint(math.Floor(width*ratio)),
-		uint(math.Floor(height*ratio)),
-		srcImage, resize.Lanczos3,
-	)
-	resizedImage := image.NewRGBA(srcImage.Bounds())
-	draw.FloydSteinberg.Draw(resizedImage, srcImage.Bounds(), srcImage, image.Point{})
-
-	return resizedImage
+	canvas, err := renderUserStateImage(players, time.Now())
+	if err != nil {
+		return nil, err
+	}
+	var out bytes.Buffer
+	if err := png.Encode(&out, canvas); err != nil {
+		return nil, err
+	}
+	return &out, nil
 }

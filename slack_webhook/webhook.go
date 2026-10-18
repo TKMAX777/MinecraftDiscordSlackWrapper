@@ -19,6 +19,10 @@ import (
 
 const SlackAPIEndpoint = "https://slack.com/api"
 
+type APIError struct{ Code string }
+
+func (e *APIError) Error() string { return "SlackAPI: " + e.Code }
+
 type Handler struct {
 	token    string
 	Identity BasicIdentity
@@ -168,15 +172,16 @@ func (s *Handler) send(jsondataBytes []byte, method string) (string, error) {
 		return "", fmt.Errorf("failed send slack: body: %s", body)
 	}
 	var r struct {
-		OK bool   `json:"ok"`
-		TS string `json:"ts"`
+		OK    bool   `json:"ok"`
+		TS    string `json:"ts"`
+		Error string `json:"error"`
 	}
 	err = json.Unmarshal(body, &r)
 	if err != nil {
 		return "", fmt.Errorf("unmarshal: %w", err)
 	}
 	if !r.OK {
-		return "", fmt.Errorf("failed send slack: body: %s", body)
+		return "", &APIError{Code: r.Error}
 	}
 
 	return r.TS, nil

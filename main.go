@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/minecraft"
 	"github.com/pkg/errors"
@@ -60,6 +61,7 @@ func main() {
 	var joinState = NewJoinState()
 	var messageSenders = []MessageSender{}
 	var closers = []Closer{}
+	var rosterRefreshers []func() error
 
 	// set up Discord bot
 	if settings.Discord.UseDiscord {
@@ -86,6 +88,9 @@ func main() {
 		}
 
 		closers = append(closers, discordHandler.Close)
+		if settings.Discord.SendJoinStateMessage {
+			rosterRefreshers = append(rosterRefreshers, discordHandler.RefreshUserState)
+		}
 	}
 
 	// set up Slack bot
@@ -94,6 +99,9 @@ func main() {
 		slackHandler.SetServerType(settings.Minecraft.ServerType)
 
 		messageSenders = append(messageSenders, slackHandler.SendMessageFunction())
+		if settings.Slack.SendJoinStateMessage {
+			rosterRefreshers = append(rosterRefreshers, slackHandler.RefreshUserState)
+		}
 
 		if settings.Slack.UseSlack2Minecraft {
 			if settings.Slack.Token == "" {
@@ -112,21 +120,9 @@ func main() {
 	}
 
 	go func() {
-		// Wait for new messages from minecraft
-		for message := range cMessage {
-			switch message.Type {
-			case minecraft.MessageTypeJoin:
-				joinState.Join(message.User)
-			case minecraft.MessageTypeLeft:
-				joinState.Leave(message.User)
-			}
-			for _, sender := range messageSenders {
-				var err = sender(message)
-				if err != nil {
-					log.Println(errors.Wrap(err, "Send"))
-				}
-			}
-		}
+		ticker := time.NewTicker(time.Minute)
+		defer ticker.Stop()
+		relayMinecraftMessages(cMessage, ticker.C, &joinState, messageSenders, rosterRefreshers)
 	}()
 
 	fmt.Printf("Now started Minecraft Wrapper...\n")
@@ -145,4 +141,34 @@ func main() {
 	}
 
 	os.Exit(0)
+}
+
+func relayMinecraftMessages(messages <-chan minecraft.Message, ticks <-chan time.Time, joinState *JoinState, senders []MessageSender, refreshers []func() error) {
+	// Wait for new messages from minecraft
+	for {
+		select {
+		case <-ticks:
+			for _, refresh := range refreshers {
+				if err := refresh(); err != nil {
+					log.Println(errors.Wrap(err, "RefreshUserState"))
+				}
+			}
+		case message, ok := <-messages:
+			if !ok {
+				return
+			}
+			switch message.Type {
+			case minecraft.MessageTypeJoin:
+				joinState.Join(message.User)
+			case minecraft.MessageTypeLeft:
+				joinState.Leave(message.User)
+			}
+			for _, sender := range senders {
+				var err = sender(message)
+				if err != nil {
+					log.Println(errors.Wrap(err, "Send"))
+				}
+			}
+		}
+	}
 }

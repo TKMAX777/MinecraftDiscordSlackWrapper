@@ -49,6 +49,12 @@ DiscordやSlackにMinecraftの出力内容を垂れ流すプログラム。つ�
 
 ## 参考 - SendJoinStateMessages -
 
+Discordでは `SendJoinStateMessage: true` を指定すると、顔アイコン・名前・ログイン人数・今回のログインからの経過時間を画像で表示します。入退室時には即時、経過時間は1分ごとに同じメッセージを編集して更新します。全員がログアウトすると画像は削除されます。
+
+経過時間はWrapperが検出したログイン時刻から計測し、再ログインでリセットされます。Wrapper再起動前の時刻は引き継ぎません。
+
+Slackでも `SendJoinStateMessage: true` を指定すると、顔アイコン・名前・ログイン人数・経過時間を表示します。入退室時と1分ごとに既存のメッセージを更新します。
+
 Slackの設定に関して、`SendJoinStateMessages`のオプションを指定する場合、次のようなフォーマットのユーザ一覧が表示されるようになります。
 
 ![SendJoinStateMessage](https://gyazo.com/b7327b2af897355258819807b4692be2.png)

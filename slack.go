@@ -5,7 +5,9 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/mcheads"
 	"github.com/TKMAX777/MinecraftDiscordSlackWrapper/minecraft"
@@ -21,8 +23,9 @@ type SlackHandler struct {
 	api *slack.Client
 	scm *scm.Client
 
-	sendChannel   chan CommandContent
-	lastMessageTS string
+	sendChannel          chan CommandContent
+	lastMessageTS        string
+	rosterHistoryChecked bool
 
 	regExp struct {
 		UserID  *regexp.Regexp
@@ -205,7 +208,11 @@ func (s *SlackHandler) SendMessageFunction() MessageSender {
 				return nil
 			}
 			sMessage.Username = message.User
-			sMessage.IconURL = mcheads.GetAvaterURI(message.User)
+			if avatarURI, err := mcheads.GetCurrentAvaterURI(message.User); err == nil {
+				sMessage.IconURL = avatarURI
+			} else {
+				log.Printf("Slack chat avatar for %s: %v", message.User, err)
+			}
 			sMessage.Text = message.Message
 		case minecraft.MessageTypeServermessage:
 			if !(s.settings.SendOption.All || s.settings.SendOption.Message) {
@@ -376,106 +383,102 @@ func (s *SlackHandler) escapeMessage(content string) (output string, err error) 
 }
 
 func (s *SlackHandler) sendUserState(event minecraft.MessageType) error {
-	var VoiceStateMessageText = fmt.Sprintf("MinecraftuserStateMessage,%s", s.webhook.Identity.UserID)
-	var message = slack_webhook.Message{
-		AsUser:   false,
-		Channel:  s.settings.ChannelID,
-		Username: s.settings.UserName,
-		IconURL:  s.settings.AvaterURI,
-		Blocks:   s.buildUserStateBlock(),
-		Text:     VoiceStateMessageText,
+	return s.RefreshUserState()
+}
+
+// RefreshUserState updates the existing Slack roster without reposting it.
+func (s *SlackHandler) RefreshUserState() error {
+	if !s.settings.SendJoinStateMessage {
+		return nil
 	}
-
-	var ts = s.lastMessageTS
-	switch {
-	case len(s.joinState.State) < 1:
-		// there is no player
-		if ts == "" {
-			// if not found a last message, find from message history
+	state := s.joinState.Snapshot()
+	marker := fmt.Sprintf("MinecraftuserStateMessage,%s", s.webhook.Identity.UserID)
+	if !s.rosterHistoryChecked {
+		s.rosterHistoryChecked = true
+		if s.lastMessageTS == "" {
 			messages, err := s.webhook.GetMessages(s.settings.ChannelID, "", 100)
 			if err == nil {
 				for _, msg := range messages {
-					if msg.Text == VoiceStateMessageText {
-						// *repost user messages contains DummyURIs
-						ts = msg.TS
-						break
-					}
-				}
-			}
-
-			if ts == "" {
-				return nil
-			}
-		}
-		s.lastMessageTS = ""
-		s.webhook.Remove(message.Channel, ts)
-	default:
-		// there are some players
-		var ts = s.lastMessageTS
-		if ts == "" {
-			// if not found a last message, find from message history
-			messages, err := s.webhook.GetMessages(s.settings.ChannelID, "", 100)
-			if err == nil {
-				for _, msg := range messages {
-					if msg.Text == VoiceStateMessageText {
-						ts = msg.TS
+					if msg.Text == marker {
+						s.lastMessageTS = msg.TS
 						break
 					}
 				}
 			}
 		}
-		if ts != "" {
-			s.webhook.Remove(message.Channel, ts)
-		}
-
-		message.TS = ts
-		ts, err := s.webhook.Send(message)
-		if err != nil {
-			return err
-		}
-
-		s.lastMessageTS = ts
 	}
-
+	if len(state) == 0 {
+		if s.lastMessageTS != "" {
+			_, err := s.webhook.Remove(s.settings.ChannelID, s.lastMessageTS)
+			var apiErr *slack_webhook.APIError
+			if err != nil && !(errors.As(err, &apiErr) && apiErr.Code == "message_not_found") {
+				return err
+			}
+			s.lastMessageTS = ""
+		}
+		return nil
+	}
+	avatarURIs := make(map[string]string, len(state))
+	for name := range state {
+		if uri, err := mcheads.GetCurrentAvaterURI(name); err == nil {
+			avatarURIs[name] = uri
+		} else {
+			log.Printf("Slack roster avatar for %s: %v", name, err)
+		}
+	}
+	message := slack_webhook.Message{
+		AsUser: false, Channel: s.settings.ChannelID, Username: s.settings.UserName,
+		IconURL: s.settings.AvaterURI, Blocks: buildSlackUserStateBlocks(state, time.Now(), avatarURIs), Text: marker,
+		TS: s.lastMessageTS,
+	}
+	var ts string
+	var err error
+	if message.TS == "" {
+		ts, err = s.webhook.Send(message)
+	} else {
+		ts, err = s.webhook.Update(message)
+		var apiErr *slack_webhook.APIError
+		if errors.As(err, &apiErr) && apiErr.Code == "message_not_found" {
+			s.lastMessageTS = ""
+			message.TS = ""
+			ts, err = s.webhook.Send(message)
+		}
+	}
+	if err != nil {
+		return err
+	}
+	if ts == "" {
+		return errors.New("RefreshSlackUserState: missing message timestamp")
+	}
+	s.lastMessageTS = ts
 	return nil
 }
 
-func (s *SlackHandler) buildUserStateBlock() []slack_webhook.BlockBase {
-	var blocks = []slack_webhook.BlockBase{}
-
-	var channelText = "Logon Users"
-	var channelNameElement = slack_webhook.MrkdwnElement(channelText)
-
-	blocks = append(
-		blocks,
-		slack_webhook.ContextBlock(channelNameElement),
-	)
-
-	var userCount int
-	var elements = []slack_webhook.BlockElement{}
-
-	for username := range s.joinState.State {
-		var userImage = mcheads.GetAvaterURI(username)
-		var imageElm = slack_webhook.ImageElement(userImage, username)
-		var userElm = slack_webhook.MrkdwnElement(username)
-
-		elements = append(elements, imageElm, userElm)
-
-		userCount++
-		if userCount%4 == 0 {
-			var block = slack_webhook.ContextBlock(elements...)
-			blocks = append(blocks, block)
-
-			elements = []slack_webhook.BlockElement{}
+func buildSlackUserStateBlocks(state map[string]UserState, now time.Time, avatarURIs map[string]string) []slack_webhook.BlockBase {
+	header := slack_webhook.SectionBlock()
+	header.Text = slack_webhook.MrkdwnElement(fmt.Sprintf("*Active Users*  ·  %d online", len(state)))
+	blocks := []slack_webhook.BlockBase{header}
+	names := make([]string, 0, len(state))
+	for name := range state {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	elements := []slack_webhook.BlockElement{}
+	for _, name := range names {
+		if uri := avatarURIs[name]; uri != "" {
+			elements = append(elements, slack_webhook.ImageElement(uri, name))
+		}
+		elements = append(elements,
+			slack_webhook.BlockElement{Type: "plain_text", Text: fmt.Sprintf("%s  ·  ⏱ %s", name, formatLoginDuration(state[name].JoinedAt, now))},
+		)
+		if len(elements) >= 8 {
+			blocks = append(blocks, slack_webhook.ContextBlock(elements...))
+			elements = nil
 		}
 	}
-
-	if userCount%4 > 0 {
-		var block = slack_webhook.ContextBlock(elements...)
-		blocks = append(blocks, block)
+	if len(elements) > 0 {
+		blocks = append(blocks, slack_webhook.ContextBlock(elements...))
 	}
-
 	blocks = append(blocks, slack_webhook.DividerBlock())
-
 	return blocks
 }

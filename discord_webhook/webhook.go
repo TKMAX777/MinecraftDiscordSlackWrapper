@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/textproto"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -20,6 +21,12 @@ import (
 )
 
 const DiscordAPIEndpoint = "https://discord.com/api"
+
+type HTTPError struct{ StatusCode int }
+
+func (e *HTTPError) Error() string {
+	return fmt.Sprintf("DiscordAPI HTTP %d: %s", e.StatusCode, http.StatusText(e.StatusCode))
+}
 
 type Handler struct {
 	webhookByChannelID map[string]*discordgo.Webhook
@@ -231,7 +238,7 @@ func (h *Handler) createChannelWebhook(method, channelID, name string) (*discord
 
 func (h *Handler) send(method, channelID, messageID string, message Message, wait bool, files []File) (newMessage *Message, err error) {
 	var hook *discordgo.Webhook
-	if h.optionHook.ID == "" {
+	if h.optionHook == nil || h.optionHook.ID == "" {
 		hook = h.GetChannelWebhook(channelID)
 	} else {
 		hook = h.optionHook
@@ -254,6 +261,10 @@ func (h *Handler) send(method, channelID, messageID string, message Message, wai
 		return nil, errors.Wrap(err, "CreatingPart")
 	}
 
+	// Describe new uploads explicitly; edits retain only the listed attachments.
+	for i, file := range files {
+		message.Attachments = append(message.Attachments, Attachment{ID: strconv.Itoa(i), Filename: file.FileName})
+	}
 	b, err := json.MarshalIndent(message, "", "    ")
 
 	var jsonBuf = bytes.NewBuffer(b)
@@ -314,8 +325,10 @@ func (h *Handler) send(method, channelID, messageID string, message Message, wai
 
 	buf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		errors.Wrap(err, "ReadResponseBody")
-		return
+		return nil, errors.Wrap(err, "ReadResponseBody")
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, &HTTPError{StatusCode: resp.StatusCode}
 	}
 
 	if len(buf) < 1 {
@@ -344,13 +357,14 @@ func (h *Handler) Delete(channelID, messageID string) error {
 	if err != nil {
 		return errors.Wrap(err, "Do")
 	}
+	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return errors.Wrap(err, "ReadAll")
 	}
 
-	if resp.StatusCode != 204 {
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusNotFound {
 		return errors.New(fmt.Sprintf("DiscordAPIError: %s", body))
 	}
 
